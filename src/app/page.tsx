@@ -1,9 +1,8 @@
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
-import { QUESTIONS, WEEKDAYS, DEFAULT_SCHEDULE, DEFAULT_REVISION_DAYS } from "@/data/catalog";
+import { QUESTIONS, DEFAULT_SCHEDULE, DEFAULT_REVISION_DAYS } from "@/data/catalog";
 import { TRACKS } from "@/data/topics";
-
-const ORDER = [1, 2, 3, 4, 5, 6, 0];
+import { WeekRotation } from "@/components/WeekRotation";
 
 export default function Landing() {
   return (
@@ -67,13 +66,8 @@ export default function Landing() {
         </div>
         <div className="card p-5 sm:col-span-3">
           <h2 className="font-semibold">Weekly rotation</h2>
-          <div className="mt-3 grid grid-cols-2 gap-2 text-sm sm:grid-cols-7">
-            {ORDER.map((d) => (
-              <div key={d} className="rounded-lg bg-panel-2 p-3">
-                <div className="font-mono text-xs text-pulse">{WEEKDAYS[d]}</div>
-                <div className="mt-1 text-muted">{DEFAULT_SCHEDULE[d].join(", ")}</div>
-              </div>
-            ))}
+          <div className="mt-4">
+            <WeekRotation schedule={DEFAULT_SCHEDULE} />
           </div>
         </div>
       </section>

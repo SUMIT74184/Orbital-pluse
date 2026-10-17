@@ -1,14 +1,14 @@
 import { requireUser } from "@/lib/auth";
 import { getUpcoming } from "@/lib/plan";
-import { formatDate } from "@/lib/dates";
-import { WEEKDAYS } from "@/data/catalog";
+import { formatDate, weekdayOf } from "@/lib/dates";
 import { DifficultyBadge } from "@/components/QuestionBits";
+import { TopicChip, WeekRotation } from "@/components/WeekRotation";
 
 export const metadata = { title: "Revision plan · DSA Pulse" };
 
 export default async function SchedulePage() {
   const user = await requireUser();
-  const { today, overdue, days } = await getUpcoming(user, 14);
+  const { today, overdue, days, solvedByGroup } = await getUpcoming(user, 14);
 
   return (
     <div className="space-y-6">
@@ -27,14 +27,12 @@ export default async function SchedulePage() {
       </div>
 
       <section className="card p-5">
-        <h2 className="font-semibold">Weekly topic rotation</h2>
-        <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
-          {[1, 2, 3, 4, 5, 6, 0].map((d) => (
-            <div key={d} className="rounded-lg bg-panel-2 p-3 text-sm">
-              <div className="font-mono text-xs text-pulse">{WEEKDAYS[d]}</div>
-              <div className="mt-1 text-muted">{user.schedule[d]?.join(", ") || "—"}</div>
-            </div>
-          ))}
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h2 className="font-semibold">Weekly topic rotation</h2>
+          <p className="text-xs text-muted">New questions come from that day&apos;s patterns · solved / total</p>
+        </div>
+        <div className="mt-4">
+          <WeekRotation schedule={user.schedule} today={weekdayOf(today)} solvedByGroup={solvedByGroup} />
         </div>
       </section>
 
@@ -66,7 +64,9 @@ export default async function SchedulePage() {
               </h3>
               <span className="font-mono text-xs text-rev">{d.items.length} rev</span>
             </div>
-            <p className="mt-0.5 text-xs text-muted">New: {d.groups.join(", ") || "—"}</p>
+            <div className="mt-2 flex flex-wrap gap-1">
+              {d.groups.length ? d.groups.map((g) => <TopicChip key={g} group={g} />) : <span className="text-xs text-muted">Rest day</span>}
+            </div>
             {d.items.length > 0 ? (
               <ul className="mt-3 space-y-1.5">
                 {d.items.map((i) => (

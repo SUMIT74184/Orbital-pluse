@@ -224,7 +224,12 @@ export async function getUpcoming(user: AppUser, days = 14) {
   await connectDB();
   const today = todayIn(user.timezone);
   const end = addDays(today, days - 1);
-  const progress = await Progress.find({ userId: oid(user.id), "revisions.doneOn": null }).lean();
+  const progress = await Progress.find({ userId: oid(user.id) }).lean();
+  const solvedByGroup: Record<string, number> = {};
+  for (const p of progress) {
+    const g = QUESTION_BY_ID.get(p.qid)?.group;
+    if (g) solvedByGroup[g] = (solvedByGroup[g] ?? 0) + 1;
+  }
   const overdue: { q: Question; due: string; revNo: number }[] = [];
   const byDate = new Map<string, { q: Question; revNo: number; total: number }[]>();
   for (let d = today; d <= end; d = addDays(d, 1)) byDate.set(d, []);
@@ -240,6 +245,7 @@ export async function getUpcoming(user: AppUser, days = 14) {
   }
   return {
     today,
+    solvedByGroup,
     overdue: overdue.sort((a, b) => a.due.localeCompare(b.due)),
     days: [...byDate].map(([date, items]) => ({ date, weekday: weekdayOf(date), groups: user.schedule[weekdayOf(date)] ?? [], items })),
   };

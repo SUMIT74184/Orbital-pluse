@@ -1,5 +1,6 @@
 import { requireUser } from "@/lib/auth";
 import { SettingsForm } from "@/components/SettingsForm";
+import { todayIn, weekdayOf } from "@/lib/dates";
 
 export const metadata = { title: "Settings · DSA Pulse" };
 
@@ -18,6 +19,7 @@ export default async function SettingsPage() {
       </div>
       <SettingsForm
         timezones={timezones}
+        today={weekdayOf(todayIn(user.timezone))}
         initial={{
           dailyTarget: user.dailyTarget,
           revisionDays: user.revisionDays.join(", "),

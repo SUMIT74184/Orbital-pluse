@@ -1,10 +1,12 @@
 "use client";
 
-import { useActionState, useMemo } from "react";
+import { useActionState, useState } from "react";
 import { saveSettings, type SettingsState } from "@/app/actions/settings";
-import { GROUPS, QUESTIONS, WEEKDAYS } from "@/data/catalog";
+import { DEFAULT_SCHEDULE, GROUPS, QUESTIONS, WEEKDAYS } from "@/data/catalog";
+import { TopicChip, WeekRotation, groupColor } from "./WeekRotation";
 
 const ORDER = [1, 2, 3, 4, 5, 6, 0];
+const COUNTS = Object.fromEntries(GROUPS.map((g) => [g, QUESTIONS.filter((q) => q.group === g).length]));
 
 type Initial = {
   dailyTarget: number;
@@ -14,13 +16,22 @@ type Initial = {
   tracks: { sd: boolean; sql: boolean };
 };
 
-export function SettingsForm({ initial, timezones }: { initial: Initial; timezones: string[] }) {
+export function SettingsForm({ initial, timezones, today }: { initial: Initial; timezones: string[]; today: number }) {
   const [state, action, pending] = useActionState<SettingsState, FormData>(saveSettings, undefined);
-  const counts = useMemo(
-    () => Object.fromEntries(GROUPS.map((g) => [g, QUESTIONS.filter((q) => q.group === g).length])),
-    [],
-  );
+  const [schedule, setSchedule] = useState(initial.schedule);
 
+  const toggle = (day: number, group: string) =>
+    setSchedule((s) =>
+      s.map((groups, d) =>
+        d !== day
+          ? groups
+          : groups.includes(group)
+            ? groups.filter((g) => g !== group)
+            : GROUPS.filter((g) => g === group || groups.includes(g)), // keep sheet order
+      ),
+    );
+
+  const unassigned = GROUPS.filter((g) => !schedule.some((day) => day.includes(g)));
   const input = "rounded-lg border border-line bg-bg px-3 py-2 text-sm outline-none focus:border-pulse";
 
   return (
@@ -55,43 +66,67 @@ export function SettingsForm({ initial, timezones }: { initial: Initial; timezon
       </section>
 
       <section className="card p-5">
-        <h2 className="font-semibold">Weekly topic rotation</h2>
-        <p className="mt-1 text-xs text-muted">Pick which patterns feed each weekday&apos;s new questions.</p>
-        <div className="mt-4 overflow-x-auto">
-          <table className="w-full min-w-[640px] text-sm">
-            <thead>
-              <tr className="text-xs text-muted">
-                <th className="py-2 pr-3 text-left font-medium">Pattern</th>
-                {ORDER.map((d) => (
-                  <th key={d} className="px-2 py-2 font-mono font-medium">
-                    {WEEKDAYS[d]}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-line">
-              {GROUPS.map((g) => (
-                <tr key={g}>
-                  <td className="py-2 pr-3">
-                    {g} <span className="font-mono text-xs text-muted">({counts[g]})</span>
-                  </td>
-                  {ORDER.map((d) => (
-                    <td key={d} className="px-2 py-2 text-center">
-                      <input
-                        type="checkbox"
-                        name={`day-${d}`}
-                        value={g}
-                        defaultChecked={initial.schedule[d]?.includes(g)}
-                        aria-label={`${g} on ${WEEKDAYS[d]}`}
-                        className="h-4 w-4 accent-[var(--color-pulse)]"
-                      />
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="font-semibold">Weekly topic rotation</h2>
+            <p className="mt-1 text-xs text-muted">Click a day next to a pattern to add or remove it. The preview updates as you go.</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setSchedule(DEFAULT_SCHEDULE)}
+            className="rounded-lg border border-line px-3 py-1.5 text-xs text-muted hover:border-muted hover:text-ink"
+          >
+            Reset to default
+          </button>
         </div>
+
+        <div className="mt-4">
+          <WeekRotation schedule={schedule} today={today} />
+        </div>
+
+        {/* Hidden inputs carry the schedule into the server action. */}
+        {schedule.map((groups, d) => groups.map((g) => <input key={`${d}-${g}`} type="hidden" name={`day-${d}`} value={g} />))}
+
+        <ul className="mt-6 grid gap-x-8 gap-y-1 lg:grid-cols-2">
+          {GROUPS.map((g) => {
+            const days = ORDER.filter((d) => schedule[d]?.includes(g));
+            return (
+              <li key={g} className="flex items-center justify-between gap-3 border-b border-line/60 py-2">
+                <div className="min-w-0">
+                  <TopicChip group={g} />
+                </div>
+                <div className="flex shrink-0 gap-1" role="group" aria-label={`Days for ${g}`}>
+                  {ORDER.map((d) => {
+                    const on = days.includes(d);
+                    const c = groupColor(g);
+                    return (
+                      <button
+                        key={d}
+                        type="button"
+                        onClick={() => toggle(d, g)}
+                        aria-pressed={on}
+                        aria-label={`${g} on ${WEEKDAYS[d]}`}
+                        className={`h-7 w-8 rounded-md border font-mono text-[11px] transition ${
+                          on ? "font-semibold text-black" : "border-line text-muted hover:border-muted hover:text-ink"
+                        } ${d === today && !on ? "border-pulse/40" : ""}`}
+                        style={on ? { background: c, borderColor: c } : undefined}
+                      >
+                        {WEEKDAYS[d].slice(0, 2)}
+                      </button>
+                    );
+                  })}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+
+        {unassigned.length > 0 && (
+          <p className="mt-4 rounded-lg border border-medium/30 bg-medium/10 px-3 py-2 text-xs text-medium">
+            Not on any day: {unassigned.map((g) => `${g} (${COUNTS[g]})`).join(", ")}. These are only used once a day&apos;s own
+            patterns run out.
+          </p>
+        )}
       </section>
 
       <div className="flex items-center gap-3">
