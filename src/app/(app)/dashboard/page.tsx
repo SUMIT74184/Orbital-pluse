@@ -4,7 +4,7 @@ import { getDashboard } from "@/lib/plan";
 import { formatDate } from "@/lib/dates";
 import { QUESTIONS } from "@/data/catalog";
 import { TRACKS } from "@/data/topics";
-import { EcgMonitor } from "@/components/EcgMonitor";
+import { MarketChart } from "@/components/MarketChart";
 import { ActivityBars, DifficultyBars, GroupBars, TodayProgress } from "@/components/Charts";
 import { ReviseToggle, SolveToggle, TopicToggle } from "@/components/Toggles";
 import { QuestionTitle } from "@/components/QuestionBits";
@@ -74,7 +74,12 @@ export default async function Dashboard() {
         </section>
       </div>
 
-      <EcgMonitor days={d.days} joined={user.joined} percent={d.percent} streak={d.streak} />
+      <MarketChart
+        days={d.days}
+        joined={user.joined}
+        streak={d.streak}
+        targetPoints={user.dailyTarget * 3 + (user.tracks.sd ? 2 : 0) + (user.tracks.sql ? 2 : 0)}
+      />
 
       <div className="grid gap-4 lg:grid-cols-2">
         <div className="space-y-4">
