@@ -2,7 +2,7 @@ import { requireUser } from "@/lib/auth";
 import { SettingsForm } from "@/components/SettingsForm";
 import { todayIn, weekdayOf } from "@/lib/dates";
 
-export const metadata = { title: "Settings · DSA Pulse" };
+export const metadata = { title: "Settings" };
 
 export default async function SettingsPage() {
   const user = await requireUser();

@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { jwtVerify } from "jose";
 
-const PROTECTED = ["/dashboard", "/questions", "/schedule", "/tracks", "/settings"];
+const PROTECTED = ["/dashboard", "/questions", "/schedule", "/tracks", "/settings", "/profile"];
 const AUTH_PAGES = ["/login", "/signup"];
 
 // Optimistic check only: pages and actions still verify the user through the data access layer.
@@ -30,5 +30,5 @@ export async function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|icon.svg).*)"],
 };

@@ -1,4 +1,4 @@
-# DSA Pulse
+# Orbit-Plus
 
 A multi-user tracker for DSA, System Design and MySQL interview prep. Built with Next.js 16 (App Router) and MongoDB.
 

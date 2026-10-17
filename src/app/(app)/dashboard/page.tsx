@@ -9,7 +9,7 @@ import { ActivityBars, DifficultyBars, GroupBars, TodayProgress } from "@/compon
 import { ReviseToggle, SolveToggle, TopicToggle } from "@/components/Toggles";
 import { QuestionTitle } from "@/components/QuestionBits";
 
-export const metadata = { title: "Dashboard · DSA Pulse" };
+export const metadata = { title: "Dashboard" };
 
 const DIFF_TOTALS = QUESTIONS.reduce<Record<string, number>>((m, q) => ({ ...m, [q.difficulty]: (m[q.difficulty] ?? 0) + 1 }), {});
 

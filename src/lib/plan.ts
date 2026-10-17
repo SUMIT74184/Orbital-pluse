@@ -278,3 +278,60 @@ export async function getTrackStates(user: AppUser) {
   const done = await TopicDone.find({ userId: oid(user.id) }).lean();
   return Object.fromEntries(done.map((t) => [`${t.kind}:${t.topicId}`, t.doneOn])) as Record<string, string>;
 }
+
+export async function getProfileStats(user: AppUser) {
+  await connectDB();
+  const userId = oid(user.id);
+  const today = todayIn(user.timezone);
+  const [progress, topics] = await Promise.all([Progress.find({ userId }).lean(), TopicDone.find({ userId }).lean()]);
+
+  const activeDays = new Set<string>();
+  for (const p of progress) {
+    activeDays.add(p.solvedOn);
+    for (const r of p.revisions ?? []) if (r.doneOn) activeDays.add(r.doneOn);
+  }
+  for (const t of topics) activeDays.add(t.doneOn);
+
+  // Longest run of consecutive active days, and the current one (today may still be pending).
+  const sorted = [...activeDays].sort();
+  let longest = 0;
+  let run = 0;
+  sorted.forEach((d, i) => {
+    run = i > 0 && diffDays(d, sorted[i - 1]) === 1 ? run + 1 : 1;
+    longest = Math.max(longest, run);
+  });
+  let current = 0;
+  for (let d = activeDays.has(today) ? today : addDays(today, -1); activeDays.has(d); d = addDays(d, -1)) current++;
+
+  const byDifficulty = { Easy: 0, Medium: 0, Hard: 0 };
+  const byGroup: Record<string, number> = {};
+  for (const p of progress) {
+    const q = QUESTION_BY_ID.get(p.qid);
+    if (!q) continue;
+    byDifficulty[q.difficulty]++;
+    byGroup[q.group] = (byGroup[q.group] ?? 0) + 1;
+  }
+  const groupTotals = Object.fromEntries(GROUPS.map((g) => [g, QUESTIONS.filter((q) => q.group === g).length]));
+  const strongest = Object.entries(byGroup)
+    .map(([g, n]) => ({ group: g, solved: n, pct: n / groupTotals[g] }))
+    .sort((a, b) => b.pct - a.pct || b.solved - a.solved)[0];
+
+  const revs = progress.flatMap((p) => p.revisions ?? []);
+  const mastered = progress.filter((p) => (p.revisions ?? []).length > 0 && p.revisions.every((r) => r.doneOn)).length;
+
+  return {
+    memberDays: diffDays(today, user.joined) + 1,
+    solved: progress.length,
+    totalQuestions: QUESTIONS.length,
+    byDifficulty,
+    revisionsDone: revs.filter((r) => r.doneOn).length,
+    revisionsPending: revs.filter((r) => !r.doneOn && r.due <= today).length,
+    mastered,
+    sdDone: topics.filter((t) => t.kind === "sd").length,
+    sqlDone: topics.filter((t) => t.kind === "sql").length,
+    activeDays: activeDays.size,
+    longestStreak: longest,
+    currentStreak: current,
+    strongest: strongest ?? null,
+  };
+}

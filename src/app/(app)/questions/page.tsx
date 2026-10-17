@@ -2,7 +2,7 @@ import { requireUser } from "@/lib/auth";
 import { getQuestionStates } from "@/lib/plan";
 import { QuestionsTable } from "@/components/QuestionsTable";
 
-export const metadata = { title: "Questions · DSA Pulse" };
+export const metadata = { title: "Questions" };
 
 export default async function QuestionsPage({ searchParams }: PageProps<"/questions">) {
   const user = await requireUser();

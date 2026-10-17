@@ -4,7 +4,7 @@ import { formatDate } from "@/lib/dates";
 import { TRACKS, type TrackKind } from "@/data/topics";
 import { TopicToggle } from "@/components/Toggles";
 
-export const metadata = { title: "System Design & MySQL · DSA Pulse" };
+export const metadata = { title: "System Design & MySQL" };
 
 export default async function TracksPage() {
   const user = await requireUser();

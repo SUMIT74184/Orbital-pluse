@@ -4,7 +4,7 @@ import { formatDate, weekdayOf } from "@/lib/dates";
 import { DifficultyBadge } from "@/components/QuestionBits";
 import { TopicChip, WeekRotation } from "@/components/WeekRotation";
 
-export const metadata = { title: "Revision plan · DSA Pulse" };
+export const metadata = { title: "Revision plan" };
 
 export default async function SchedulePage() {
   const user = await requireUser();

@@ -13,7 +13,10 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "DSA Pulse — daily DSA, System Design & MySQL tracker",
+  title: {
+    default: "Orbit-Plus — daily DSA, System Design & MySQL tracker",
+    template: "%s · Orbit-Plus",
+  },
   description: "Daily question targets, spaced revisions and progress tracking for interview prep.",
 };
 
