@@ -1,5 +1,6 @@
 import { requireUser } from "@/lib/auth";
 import { getUpcoming } from "@/lib/plan";
+import { getCatalog } from "@/lib/catalog";
 import { formatDate, weekdayOf } from "@/lib/dates";
 import { DifficultyBadge } from "@/components/QuestionBits";
 import { TopicChip, WeekRotation } from "@/components/WeekRotation";
@@ -8,7 +9,7 @@ export const metadata = { title: "Revision plan" };
 
 export default async function SchedulePage() {
   const user = await requireUser();
-  const { today, overdue, days, solvedByGroup } = await getUpcoming(user, 14);
+  const [{ today, overdue, days, solvedByGroup }, { meta }] = await Promise.all([getUpcoming(user, 14), getCatalog()]);
 
   return (
     <div className="space-y-6">
@@ -32,7 +33,7 @@ export default async function SchedulePage() {
           <p className="text-xs text-muted">New questions come from that day&apos;s patterns · solved / total</p>
         </div>
         <div className="mt-4">
-          <WeekRotation schedule={user.schedule} today={weekdayOf(today)} solvedByGroup={solvedByGroup} />
+          <WeekRotation schedule={user.schedule} today={weekdayOf(today)} solvedByGroup={solvedByGroup} meta={meta} />
         </div>
       </section>
 
@@ -65,7 +66,7 @@ export default async function SchedulePage() {
               <span className="font-mono text-xs text-rev">{d.items.length} rev</span>
             </div>
             <div className="mt-2 flex flex-wrap gap-1">
-              {d.groups.length ? d.groups.map((g) => <TopicChip key={g} group={g} />) : <span className="text-xs text-muted">Rest day</span>}
+              {d.groups.length ? d.groups.map((g) => <TopicChip key={g} group={g} meta={meta} />) : <span className="text-xs text-muted">Rest day</span>}
             </div>
             {d.items.length > 0 ? (
               <ul className="mt-3 space-y-1.5">

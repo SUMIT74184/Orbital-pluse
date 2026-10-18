@@ -6,7 +6,8 @@ export type Topic = {
   practice?: { title: string; url: string }[];
 };
 
-export type TrackKind = "sd" | "sql";
+// Track key, e.g. "sd", "sql", or any key an admin creates.
+export type TrackKind = string;
 
 const lc = (slug: string, title: string) => ({ title, url: `https://leetcode.com/problems/${slug}/` });
 
@@ -114,7 +115,8 @@ const SQL_TRACK: Omit<Topic, "id">[] = [
   { section: "Interview", title: "Top SQL interview questions round-up", points: ["Nth highest salary variants", "Duplicates detection", "Employees earning more than managers", "Department-wise max salary"] },
 ];
 
-export const TRACKS: Record<TrackKind, { name: string; topics: Topic[] }> = {
-  sd: { name: "System Design", topics: SYSTEM_DESIGN.map((t, i) => ({ ...t, id: i + 1 })) },
-  sql: { name: "MySQL", topics: SQL_TRACK.map((t, i) => ({ ...t, id: i + 1 })) },
-};
+// Seed for the tracks collection. At runtime tracks come from the database (src/lib/catalog.ts).
+export const SEED_TRACKS: { key: string; name: string; description: string; topics: Topic[] }[] = [
+  { key: "sd", name: "System Design", description: "Fundamentals, building blocks, then classic case studies.", topics: SYSTEM_DESIGN.map((t, i) => ({ ...t, id: i + 1 })) },
+  { key: "sql", name: "MySQL", description: "Queries with LeetCode SQL practice, then schema design and InnoDB internals.", topics: SQL_TRACK.map((t, i) => ({ ...t, id: i + 1 })) },
+];

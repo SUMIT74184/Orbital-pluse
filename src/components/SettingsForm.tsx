@@ -2,21 +2,32 @@
 
 import { useActionState, useState } from "react";
 import { saveSettings, type SettingsState } from "@/app/actions/settings";
-import { DEFAULT_SCHEDULE, GROUPS, QUESTIONS, WEEKDAYS } from "@/data/catalog";
+import { DEFAULT_SCHEDULE, WEEKDAYS } from "@/data/catalog";
+import type { CatalogMeta } from "@/lib/catalog";
 import { TopicChip, WeekRotation, groupColor } from "./WeekRotation";
 
 const ORDER = [1, 2, 3, 4, 5, 6, 0];
-const COUNTS = Object.fromEntries(GROUPS.map((g) => [g, QUESTIONS.filter((q) => q.group === g).length]));
 
 type Initial = {
   dailyTarget: number;
   revisionDays: string;
   timezone: string;
   schedule: string[][];
-  tracks: { sd: boolean; sql: boolean };
+  tracks: { key: string; name: string; on: boolean }[];
 };
 
-export function SettingsForm({ initial, timezones, today }: { initial: Initial; timezones: string[]; today: number }) {
+export function SettingsForm({
+  initial,
+  timezones,
+  today,
+  meta,
+}: {
+  initial: Initial;
+  timezones: string[];
+  today: number;
+  meta: CatalogMeta;
+}) {
+  const GROUPS = meta.groups;
   const [state, action, pending] = useActionState<SettingsState, FormData>(saveSettings, undefined);
   const [schedule, setSchedule] = useState(initial.schedule);
 
@@ -54,14 +65,12 @@ export function SettingsForm({ initial, timezones, today }: { initial: Initial; 
           </select>
         </label>
         <div className="flex flex-wrap gap-5 sm:col-span-3">
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" name="track-sd" defaultChecked={initial.tracks.sd} className="h-4 w-4 accent-[var(--color-topic)]" />
-            Daily System Design topic
-          </label>
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" name="track-sql" defaultChecked={initial.tracks.sql} className="h-4 w-4 accent-[var(--color-topic)]" />
-            Daily MySQL topic
-          </label>
+          {initial.tracks.map((t) => (
+            <label key={t.key} className="flex items-center gap-2 text-sm">
+              <input type="checkbox" name={`track-${t.key}`} defaultChecked={t.on} className="h-4 w-4 accent-[var(--color-topic)]" />
+              Daily {t.name} topic
+            </label>
+          ))}
         </div>
       </section>
 
@@ -81,7 +90,7 @@ export function SettingsForm({ initial, timezones, today }: { initial: Initial; 
         </div>
 
         <div className="mt-4">
-          <WeekRotation schedule={schedule} today={today} />
+          <WeekRotation schedule={schedule} today={today} meta={meta} />
         </div>
 
         {/* Hidden inputs carry the schedule into the server action. */}
@@ -93,12 +102,12 @@ export function SettingsForm({ initial, timezones, today }: { initial: Initial; 
             return (
               <li key={g} className="flex items-center justify-between gap-3 border-b border-line/60 py-2">
                 <div className="min-w-0">
-                  <TopicChip group={g} />
+                  <TopicChip group={g} meta={meta} />
                 </div>
                 <div className="flex shrink-0 gap-1" role="group" aria-label={`Days for ${g}`}>
                   {ORDER.map((d) => {
                     const on = days.includes(d);
-                    const c = groupColor(g);
+                    const c = groupColor(g, GROUPS);
                     return (
                       <button
                         key={d}
@@ -123,7 +132,7 @@ export function SettingsForm({ initial, timezones, today }: { initial: Initial; 
 
         {unassigned.length > 0 && (
           <p className="mt-4 rounded-lg border border-medium/30 bg-medium/10 px-3 py-2 text-xs text-medium">
-            Not on any day: {unassigned.map((g) => `${g} (${COUNTS[g]})`).join(", ")}. These are only used once a day&apos;s own
+            Not on any day: {unassigned.map((g) => `${g} (${meta.counts[g]})`).join(", ")}. These are only used once a day&apos;s own
             patterns run out.
           </p>
         )}

@@ -9,6 +9,7 @@ A multi-user tracker for DSA, System Design and MySQL interview prep. Built with
 - **Dashboard**: today's progress bar, a stock-market style candlestick chart ($DSAX prep index), a 14-day stacked bar chart, and per-pattern and per-difficulty progress.
 - **Revision plan**: the next 14 days of revisions and any that are overdue.
 - **Settings**: daily target, revision days, timezone, and which patterns go on which weekday.
+- **Email reminders** (Profile page): a daily plan email at an hour each user picks, in their own timezone, and an optional Sunday summary. Includes one-click unsubscribe.
 
 ## Default weekly rotation
 
@@ -50,12 +51,28 @@ Vercel can't reach the MongoDB running in Docker on your machine, so production 
    - `AUTH_SECRET`: a random string of 32 or more characters
 4. Deploy. Indexes are created automatically on first use.
 
+## Email reminders
+
+Each user chooses a time on their Profile page. A GitHub Actions workflow (`.github/workflows/reminders.yml`) calls `GET /api/cron/reminders` every hour, and the app emails only the users whose time has come. Every user stores their next send time (`reminders.dailyAt` / `weeklyAt`, in UTC). Each run claims that time atomically before sending, so overlapping or repeated runs never send the same email twice. A failed send is retried up to 3 times that day. Each day's result is recorded in the `emaillogs` collection. The daily email is skipped when there's nothing left to do.
+
+Setup:
+
+1. **Resend**: create an API key at resend.com. Verify a domain you own and use it in `EMAIL_FROM`. Without a verified domain, Resend only delivers to the email address of your own Resend account. That's enough for testing.
+2. **Vercel env vars**: `RESEND_API_KEY`, `EMAIL_FROM`, `CRON_SECRET` (`openssl rand -hex 32`), and `APP_URL` (e.g. `https://your-app.vercel.app`).
+3. **GitHub repo secrets** (Settings → Secrets and variables → Actions): `APP_URL` and `CRON_SECRET`, with the same values as in Vercel.
+4. Run the workflow once from the Actions tab (**Run workflow**) and check that the response is `{"sent":…}`, not 401. You can also use **Send me a test email** on the Profile page.
+
+To test locally: `curl -H "Authorization: Bearer $CRON_SECRET" localhost:3000/api/cron/reminders`.
+
+GitHub can start scheduled workflows 5 to 15 minutes late, and pauses them in repos with no activity for 60 days.
+
 ## Layout
 
 ```
 src/data/        questions.json (parsed from the PDF), catalog.ts (groups/schedule), topics.ts (SD + MySQL tracks)
 src/lib/         db, models, session (JWT cookie), auth (data access layer), plan.ts (daily plan, revisions, stats)
-src/app/actions  server actions: auth, progress, settings
+src/app/actions  server actions: auth, progress, settings, profile, reminders
+src/lib/reminders.ts  email content, unsubscribe tokens and the cron dispatcher (src/lib/email.ts sends through Resend)
 src/app/(auth)   login / signup
 src/app/(app)    dashboard, questions, schedule (revision plan), tracks, settings
 src/proxy.ts     redirects logged-out users to /login

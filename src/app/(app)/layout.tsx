@@ -13,6 +13,11 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
       <span className="max-w-32 truncate text-muted">{user.name.split(" ")[0]}</span>
     </Link>
   );
+  const adminLink = user.isAdmin && (
+    <Link href="/admin" className="rounded-lg border border-topic/40 px-2.5 py-1 text-xs font-medium text-topic hover:bg-topic/10">
+      Admin
+    </Link>
+  );
   return (
     <>
       <header className="sticky top-0 z-20 border-b border-line bg-bg/85 backdrop-blur">
@@ -20,6 +25,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
           <div className="flex items-center justify-between">
             <Logo href="/dashboard" />
             <div className="flex items-center gap-2 sm:hidden">
+              {adminLink}
               {profileLink}
               <form action={logout}>
                 <button className="text-sm text-muted hover:text-ink">Log out</button>
@@ -28,6 +34,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
           </div>
           <NavLinks />
           <div className="ml-auto hidden items-center gap-2 sm:flex">
+            {adminLink}
             {profileLink}
             <form action={logout}>
               <button className="rounded-lg border border-line px-3 py-1.5 text-sm text-muted hover:border-muted hover:text-ink">Log out</button>

@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { jwtVerify } from "jose";
 
-const PROTECTED = ["/dashboard", "/questions", "/schedule", "/tracks", "/settings", "/profile"];
+const PROTECTED = ["/dashboard", "/questions", "/schedule", "/tracks", "/settings", "/profile", "/admin"];
 const AUTH_PAGES = ["/login", "/signup"];
 
 // Optimistic check only: pages and actions still verify the user through the data access layer.
@@ -21,11 +21,11 @@ export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const isProtected = PROTECTED.some((p) => pathname === p || pathname.startsWith(`${p}/`));
   const isAuthPage = AUTH_PAGES.includes(pathname);
-  if (!isProtected && !isAuthPage && pathname !== "/") return NextResponse.next();
+  if (!isProtected && !isAuthPage) return NextResponse.next();
 
   const authed = await hasValidSession(req);
   if (isProtected && !authed) return NextResponse.redirect(new URL("/login", req.url));
-  if ((isAuthPage || pathname === "/") && authed) return NextResponse.redirect(new URL("/dashboard", req.url));
+  if (isAuthPage && authed) return NextResponse.redirect(new URL("/dashboard", req.url));
   return NextResponse.next();
 }
 

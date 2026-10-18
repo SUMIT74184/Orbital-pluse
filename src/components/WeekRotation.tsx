@@ -1,16 +1,15 @@
-import { GROUPS, QUESTIONS, WEEKDAYS } from "@/data/catalog";
+import { WEEKDAYS } from "@/data/catalog";
+import type { CatalogMeta } from "@/lib/catalog";
 
 const ORDER = [1, 2, 3, 4, 5, 6, 0];
 const FULL = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
 // A stable colour per pattern so the same topic looks the same everywhere.
 const HUES = ["#4c9aff", "#2dd4a0", "#b18cff", "#ffb547", "#ff7eb6", "#5eead4", "#f87171", "#a3e635", "#fbbf24"];
-export const groupColor = (g: string) => HUES[Math.max(0, GROUPS.indexOf(g)) % HUES.length];
+export const groupColor = (g: string, groups: string[]) => HUES[Math.max(0, groups.indexOf(g)) % HUES.length];
 
-const COUNTS = Object.fromEntries(GROUPS.map((g) => [g, QUESTIONS.filter((q) => q.group === g).length]));
-
-export function TopicChip({ group, solved }: { group: string; solved?: number }) {
-  const c = groupColor(group);
+export function TopicChip({ group, solved, meta }: { group: string; solved?: number; meta: CatalogMeta }) {
+  const c = groupColor(group, meta.groups);
   return (
     <span
       className="inline-flex max-w-full items-baseline justify-between gap-1.5 rounded-md border px-2 py-1 text-xs leading-snug"
@@ -19,7 +18,7 @@ export function TopicChip({ group, solved }: { group: string; solved?: number })
       <span>{group}</span>
       <span className="font-mono text-[10px] opacity-70">
         {solved != null ? `${solved}/` : ""}
-        {COUNTS[group]}
+        {meta.counts[group] ?? 0}
       </span>
     </span>
   );
@@ -30,10 +29,12 @@ export function TopicChip({ group, solved }: { group: string; solved?: number })
  */
 export function WeekRotation({
   schedule,
+  meta,
   today,
   solvedByGroup,
 }: {
   schedule: string[][];
+  meta: CatalogMeta;
   today?: number;
   solvedByGroup?: Record<string, number>;
 }) {
@@ -41,7 +42,7 @@ export function WeekRotation({
     <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-7">
       {ORDER.map((d) => {
         const groups = schedule[d] ?? [];
-        const total = groups.reduce((n, g) => n + (COUNTS[g] ?? 0), 0);
+        const total = groups.reduce((n, g) => n + (meta.counts[g] ?? 0), 0);
         const solved = solvedByGroup ? groups.reduce((n, g) => n + (solvedByGroup[g] ?? 0), 0) : null;
         const isToday = d === today;
         return (
@@ -64,7 +65,7 @@ export function WeekRotation({
             </div>
             <div className="mt-2.5 flex flex-1 flex-wrap content-start gap-1.5 lg:flex-col lg:flex-nowrap">
               {groups.length ? (
-                groups.map((g) => <TopicChip key={g} group={g} solved={solvedByGroup?.[g]} />)
+                groups.map((g) => <TopicChip key={g} group={g} solved={solvedByGroup?.[g]} meta={meta} />)
               ) : (
                 <span className="text-xs text-muted">Rest day</span>
               )}

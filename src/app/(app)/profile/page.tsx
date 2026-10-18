@@ -1,21 +1,27 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
-import { getProfileStats } from "@/lib/plan";
+import { getContributions, getProfileStats } from "@/lib/plan";
 import { formatDate } from "@/lib/dates";
-import { QUESTIONS } from "@/data/catalog";
-import { TRACKS } from "@/data/topics";
+import { getCatalog } from "@/lib/catalog";
+import { GoalForm } from "@/components/GoalForm";
 import { Avatar } from "@/components/Avatar";
 import { DifficultyBars } from "@/components/Charts";
+import { ContributionCalendar } from "@/components/ContributionCalendar";
 import { ProfileForms } from "@/components/ProfileForms";
+import { ReminderForm } from "@/components/ReminderForm";
+import { connectDB } from "@/lib/db";
+import { EmailLog } from "@/lib/models";
 
 export const metadata = { title: "Profile" };
 
-const DIFF_TOTALS = QUESTIONS.reduce<Record<string, number>>((m, q) => ({ ...m, [q.difficulty]: (m[q.difficulty] ?? 0) + 1 }), {});
-
 export default async function ProfilePage() {
   const user = await requireUser();
-  const s = await getProfileStats(user);
-  const pct = Math.round((s.solved / s.totalQuestions) * 100);
+  const [s, cat, contributions] = await Promise.all([getProfileStats(user), getCatalog(), getContributions(user)]);
+  await connectDB();
+  const lastEmail = await EmailLog.findOne({ userId: user.id }).sort({ updatedAt: -1 }).lean();
+  const when = (d: Date | null) =>
+    d ? d.toLocaleString("en-US", { timeZone: user.timezone, weekday: "short", day: "numeric", month: "short", hour: "numeric", minute: "2-digit" }) : null;
+  const pct = s.totalQuestions ? Math.round((s.solved / s.totalQuestions) * 100) : 0;
 
   return (
     <div className="space-y-6">
@@ -58,8 +64,9 @@ export default async function ProfilePage() {
         <Tile label="Mastered" value={s.mastered} sub="all 6 revisions done" color="var(--color-pulse)" />
         <Tile label="Current streak" value={s.currentStreak} sub={`best ${s.longestStreak} day${s.longestStreak === 1 ? "" : "s"}`} color="var(--color-topic)" />
         <Tile label="Active days" value={s.activeDays} sub={`of ${s.memberDays}`} color="var(--color-ink)" />
-        <Tile label="System Design" value={s.sdDone} sub={`of ${TRACKS.sd.topics.length} topics`} color="var(--color-topic)" />
-        <Tile label="MySQL" value={s.sqlDone} sub={`of ${TRACKS.sql.topics.length} topics`} color="var(--color-topic)" />
+        {s.tracks.map((t) => (
+          <Tile key={t.key} label={t.name} value={t.done} sub={`of ${t.total} topics`} color="var(--color-topic)" />
+        ))}
         <Tile
           label="Strongest pattern"
           value={s.strongest ? s.strongest.group : "—"}
@@ -69,12 +76,34 @@ export default async function ProfilePage() {
         />
       </section>
 
+      <ContributionCalendar days={contributions.days} today={contributions.today} />
+
       <section className="card p-5">
         <h2 className="font-semibold">Difficulty breakdown</h2>
         <div className="mt-4">
-          <DifficultyBars byDifficulty={s.byDifficulty} totals={DIFF_TOTALS} />
+          <DifficultyBars byDifficulty={s.byDifficulty} totals={cat.diffTotals} />
         </div>
       </section>
+
+      <GoalForm
+        goal={user.goal}
+        areas={[{ key: "dsa", name: "DSA" }, ...cat.tracks.map((t) => ({ key: t.key, name: t.name }))]}
+      />
+
+      <ReminderForm
+        initial={{ daily: user.reminders.daily, weekly: user.reminders.weekly, hour: user.reminders.hour }}
+        timezone={user.timezone}
+        email={user.email}
+        next={{ daily: when(user.reminders.dailyAt), weekly: when(user.reminders.weeklyAt) }}
+        last={
+          lastEmail && {
+            when: when(lastEmail.updatedAt ?? null) ?? "",
+            kind: lastEmail.kind,
+            status: lastEmail.status,
+            detail: lastEmail.detail,
+          }
+        }
+      />
 
       <ProfileForms name={user.name} email={user.email} />
     </div>

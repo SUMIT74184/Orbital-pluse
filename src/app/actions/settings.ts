@@ -6,7 +6,8 @@ import { requireUser } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
 import { User } from "@/lib/models";
 import { resetTodayPlanIfUntouched } from "@/lib/plan";
-import { GROUPS } from "@/data/catalog";
+import { scheduleFor } from "@/lib/reminders";
+import { getCatalog } from "@/lib/catalog";
 
 export type SettingsState = { ok?: boolean; error?: string } | undefined;
 
@@ -35,7 +36,8 @@ export async function saveSettings(_: SettingsState, formData: FormData): Promis
   });
   if (!parsed.success) return { error: parsed.error.issues[0].message };
 
-  const valid = new Set(GROUPS);
+  const cat = await getCatalog();
+  const valid = new Set(cat.groups);
   const schedule = Array.from({ length: 7 }, (_, d) =>
     formData.getAll(`day-${d}`).map(String).filter((g) => valid.has(g)),
   );
@@ -47,7 +49,12 @@ export async function saveSettings(_: SettingsState, formData: FormData): Promis
       $set: {
         ...parsed.data,
         schedule,
-        tracks: { sd: formData.get("track-sd") === "on", sql: formData.get("track-sql") === "on" },
+        // Keep choices for archived tracks so they come back as they were if restored.
+        tracks: { ...user.tracks, ...Object.fromEntries(cat.tracks.map((t) => [t.key, formData.get(`track-${t.key}`) === "on"])) },
+        // Reminder times are stored in UTC, so a new timezone moves them.
+        ...(parsed.data.timezone !== user.timezone && {
+          ...Object.fromEntries(Object.entries(scheduleFor(user.reminders, parsed.data.timezone)).map(([k, v]) => [`reminders.${k}`, v])),
+        }),
       },
     },
   );

@@ -1,11 +1,13 @@
 import { requireUser } from "@/lib/auth";
 import { SettingsForm } from "@/components/SettingsForm";
 import { todayIn, weekdayOf } from "@/lib/dates";
+import { getCatalog, trackOn } from "@/lib/catalog";
 
 export const metadata = { title: "Settings" };
 
 export default async function SettingsPage() {
   const user = await requireUser();
+  const cat = await getCatalog();
   const zones = Intl.supportedValuesOf("timeZone");
   const timezones = zones.includes(user.timezone) ? zones : [user.timezone, ...zones];
   return (
@@ -20,12 +22,13 @@ export default async function SettingsPage() {
       <SettingsForm
         timezones={timezones}
         today={weekdayOf(todayIn(user.timezone))}
+        meta={cat.meta}
         initial={{
           dailyTarget: user.dailyTarget,
           revisionDays: user.revisionDays.join(", "),
           timezone: user.timezone,
           schedule: user.schedule,
-          tracks: user.tracks,
+          tracks: cat.tracks.map((t) => ({ key: t.key, name: t.name, on: trackOn(user.tracks, t) })),
         }}
       />
     </div>

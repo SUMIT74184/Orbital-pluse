@@ -12,11 +12,8 @@ export type Question = {
   url: string;
 };
 
-export const QUESTIONS = raw as Question[];
-export const QUESTION_BY_ID = new Map(QUESTIONS.map((q) => [q.id, q]));
-
-// Scheduling groups, in the order they appear in the sheet.
-export const GROUPS: string[] = [...new Set(QUESTIONS.map((q) => q.group))];
+// Seed for the questions collection. At runtime questions come from the database (src/lib/catalog.ts).
+export const SEED_QUESTIONS = raw as Question[];
 
 export const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
 

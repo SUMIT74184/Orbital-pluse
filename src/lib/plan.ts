@@ -4,15 +4,16 @@ import { connectDB } from "./db";
 import { Plan, Progress, TopicDone, type PlanDoc, type ProgressDoc } from "./models";
 import type { AppUser } from "./auth";
 import { addDays, diffDays, todayIn, weekdayOf } from "./dates";
-import { GROUPS, QUESTIONS, QUESTION_BY_ID, type Question } from "@/data/catalog";
-import { TRACKS, type Topic, type TrackKind } from "@/data/topics";
+import { getCatalog, trackOn, type Catalog, type CatalogTrack } from "./catalog";
+import type { Question } from "@/data/catalog";
+import type { Topic, TrackKind } from "@/data/topics";
 
 const oid = (id: string) => new Types.ObjectId(id);
 
 /** Round-robin across the day's groups so each day mixes topics instead of draining one. */
-function pickNew(user: AppUser, date: string, taken: Set<number>): number[] {
+function pickNew(user: AppUser, date: string, taken: Set<number>, questions: Question[]): number[] {
   const todays = user.schedule[weekdayOf(date)] ?? [];
-  const queues = todays.map((g) => QUESTIONS.filter((q) => q.group === g && !taken.has(q.id)));
+  const queues = todays.map((g) => questions.filter((q) => q.group === g && !taken.has(q.id)));
   const picked: number[] = [];
   while (picked.length < user.dailyTarget && queues.some((q) => q.length)) {
     for (const q of queues) {
@@ -24,8 +25,8 @@ function pickNew(user: AppUser, date: string, taken: Set<number>): number[] {
     // Today's topics are exhausted: pull from groups not on any weekday first, then anything left.
     const scheduled = new Set(user.schedule.flat());
     const rest = [
-      ...QUESTIONS.filter((q) => !scheduled.has(q.group)),
-      ...QUESTIONS.filter((q) => scheduled.has(q.group)),
+      ...questions.filter((q) => !scheduled.has(q.group)),
+      ...questions.filter((q) => scheduled.has(q.group)),
     ];
     for (const q of rest) {
       if (picked.length >= user.dailyTarget) break;
@@ -35,9 +36,18 @@ function pickNew(user: AppUser, date: string, taken: Set<number>): number[] {
   return picked;
 }
 
-function nextTopic(kind: TrackKind, done: Set<string>): number | null {
-  const t = TRACKS[kind].topics.find((t) => !done.has(`${kind}:${t.id}`));
+function nextTopic(track: CatalogTrack, done: Set<string>): number | null {
+  const t = track.topics.find((t) => !done.has(`${track.key}:${t.id}`));
   return t ? t.id : null;
+}
+
+/** The plan's track topics; plans from before configurable tracks kept them in sdId / sqlId. */
+export function planTopics(plan: PlanDoc): { track: string; topicId: number }[] {
+  if (plan.topics) return plan.topics;
+  return [
+    ...(plan.sdId != null ? [{ track: "sd", topicId: plan.sdId }] : []),
+    ...(plan.sqlId != null ? [{ track: "sql", topicId: plan.sqlId }] : []),
+  ];
 }
 
 export async function getOrCreatePlan(user: AppUser, date: string): Promise<PlanDoc> {
@@ -46,7 +56,8 @@ export async function getOrCreatePlan(user: AppUser, date: string): Promise<Plan
   const existing = await Plan.findOne({ userId, date }).lean();
   if (existing) return existing;
 
-  const [solved, pastPlans, topics] = await Promise.all([
+  const [cat, solved, pastPlans, topics] = await Promise.all([
+    getCatalog(),
     Progress.find({ userId }, { qid: 1 }).lean(),
     Plan.find({ userId, date: { $lt: date } }, { newQids: 1 }).lean(),
     TopicDone.find({ userId }, { kind: 1, topicId: 1 }).lean(),
@@ -58,9 +69,13 @@ export async function getOrCreatePlan(user: AppUser, date: string): Promise<Plan
   const doc = {
     userId,
     date,
-    newQids: pickNew(user, date, taken),
-    sdId: user.tracks.sd ? nextTopic("sd", done) : null,
-    sqlId: user.tracks.sql ? nextTopic("sql", done) : null,
+    newQids: pickNew(user, date, taken, cat.questions),
+    topics: cat.tracks
+      .filter((t) => trackOn(user.tracks, t))
+      .flatMap((t) => {
+        const topicId = nextTopic(t, done);
+        return topicId == null ? [] : [{ track: t.key, topicId }];
+      }),
   };
   try {
     await Plan.create(doc);
@@ -94,12 +109,20 @@ export type RevisionItem = {
 
 export type DayActivity = { date: string; solved: number; revised: number; topics: number };
 
-export type TopicItem = { kind: TrackKind; topic: Topic; done: boolean; doneToday: boolean };
+export type TopicItem = {
+  kind: TrackKind;
+  trackName: string;
+  trackTotal: number;
+  position: number; // 1-based place of this topic in the track
+  topic: Topic;
+  done: boolean;
+  doneToday: boolean;
+};
 
-function revisionItems(progress: ProgressDoc[], today: string): RevisionItem[] {
+function revisionItems(progress: ProgressDoc[], today: string, cat: Catalog): RevisionItem[] {
   const items: RevisionItem[] = [];
   for (const p of progress) {
-    const q = QUESTION_BY_ID.get(p.qid);
+    const q = cat.byId.get(p.qid);
     if (!q) continue;
     const revs = p.revisions ?? [];
     const pendingIdx = revs.findIndex((r) => !r.doneOn && r.due <= today);
@@ -146,9 +169,19 @@ function streakOf(days: DayActivity[]): number {
   return n;
 }
 
+/** Topics done per live track, for tracks the user has on or has made progress in. */
+function trackTotals(cat: Catalog, user: AppUser, done: { kind: string; topicId: number }[]) {
+  return cat.tracks
+    .map((t) => {
+      const live = new Set(t.topics.map((x) => x.id));
+      return { key: t.key, name: t.name, done: done.filter((d) => d.kind === t.key && live.has(d.topicId)).length, total: t.topics.length, on: trackOn(user.tracks, t) };
+    })
+    .filter((t) => t.on || t.done > 0);
+}
+
 export async function getDashboard(user: AppUser) {
   const today = todayIn(user.timezone);
-  const plan = await getOrCreatePlan(user, today);
+  const [plan, cat] = await Promise.all([getOrCreatePlan(user, today), getCatalog()]);
   const userId = oid(user.id);
   const [progress, pastPlans, topicsDone] = await Promise.all([
     Progress.find({ userId }).lean(),
@@ -158,21 +191,26 @@ export async function getDashboard(user: AppUser) {
   const solvedOn = new Map(progress.map((p) => [p.qid, p.solvedOn]));
   const topicDone = new Map(topicsDone.map((t) => [`${t.kind}:${t.topicId}`, t.doneOn]));
 
-  const newItems = plan.newQids.map((id) => ({ q: QUESTION_BY_ID.get(id)!, solvedOn: solvedOn.get(id) ?? null }));
+  const newItems = plan.newQids
+    .filter((id) => cat.byId.has(id))
+    .map((id) => ({ q: cat.byId.get(id)!, solvedOn: solvedOn.get(id) ?? null }));
 
+  // Archived questions drop out of the backlog; ones already solved stay in revisions.
   const missedMap = new Map<number, string>();
-  for (const p of pastPlans) for (const id of p.newQids) if (!solvedOn.has(id) && !missedMap.has(id)) missedMap.set(id, p.date);
-  const missed = [...missedMap].map(([id, date]) => ({ q: QUESTION_BY_ID.get(id)!, assignedOn: date }));
+  for (const p of pastPlans)
+    for (const id of p.newQids) if (!solvedOn.has(id) && !missedMap.has(id) && cat.byId.get(id)?.archived === false) missedMap.set(id, p.date);
+  const missed = [...missedMap].map(([id, date]) => ({ q: cat.byId.get(id)!, assignedOn: date }));
 
-  const revisions = revisionItems(progress, today);
+  const revisions = revisionItems(progress, today, cat);
 
   const topics: TopicItem[] = [];
-  for (const [kind, id] of [["sd", plan.sdId], ["sql", plan.sqlId]] as const) {
-    if (id == null) continue;
-    const topic = TRACKS[kind].topics.find((t) => t.id === id);
-    if (!topic) continue;
+  for (const { track: kind, topicId: id } of planTopics(plan)) {
+    const track = cat.trackByKey.get(kind);
+    const topic = track?.allTopics.find((t) => t.id === id);
+    if (!track || !topic) continue;
     const doneOn = topicDone.get(`${kind}:${id}`);
-    topics.push({ kind, topic, done: !!doneOn, doneToday: doneOn === today });
+    const position = track.topics.findIndex((t) => t.id === id) + 1;
+    topics.push({ kind, trackName: track.name, trackTotal: track.topics.length, position, topic, done: !!doneOn, doneToday: doneOn === today });
   }
 
   const total = newItems.length + revisions.length + topics.length;
@@ -183,13 +221,13 @@ export async function getDashboard(user: AppUser) {
 
   const byDifficulty = { Easy: 0, Medium: 0, Hard: 0 };
   for (const p of progress) {
-    const q = QUESTION_BY_ID.get(p.qid);
+    const q = cat.byId.get(p.qid);
     if (q) byDifficulty[q.difficulty]++;
   }
-  const byGroup = GROUPS.map((g) => ({
+  const byGroup = cat.groups.map((g) => ({
     group: g,
-    total: QUESTIONS.filter((q) => q.group === g).length,
-    solved: progress.filter((p) => QUESTION_BY_ID.get(p.qid)?.group === g).length,
+    total: cat.counts[g],
+    solved: progress.filter((p) => cat.byId.get(p.qid)?.group === g).length,
   }));
   const revisionsDone = progress.reduce((n, p) => n + (p.revisions ?? []).filter((r) => r.doneOn).length, 0);
   const revisionsTotal = progress.reduce((n, p) => n + (p.revisions ?? []).length, 0);
@@ -208,13 +246,12 @@ export async function getDashboard(user: AppUser) {
     streak: streakOf(days),
     stats: {
       solved: progress.length,
-      totalQuestions: QUESTIONS.length,
+      totalQuestions: cat.questions.length,
       byDifficulty,
       byGroup,
       revisionsDone,
       revisionsTotal,
-      sdDone: topicsDone.filter((t) => t.kind === "sd").length,
-      sqlDone: topicsDone.filter((t) => t.kind === "sql").length,
+      tracks: trackTotals(cat, user, topicsDone),
     },
   };
 }
@@ -222,19 +259,20 @@ export async function getDashboard(user: AppUser) {
 /** Revisions coming up over the next `days` days, grouped by date (overdue first). */
 export async function getUpcoming(user: AppUser, days = 14) {
   await connectDB();
+  const { byId } = await getCatalog();
   const today = todayIn(user.timezone);
   const end = addDays(today, days - 1);
   const progress = await Progress.find({ userId: oid(user.id) }).lean();
   const solvedByGroup: Record<string, number> = {};
   for (const p of progress) {
-    const g = QUESTION_BY_ID.get(p.qid)?.group;
+    const g = byId.get(p.qid)?.group;
     if (g) solvedByGroup[g] = (solvedByGroup[g] ?? 0) + 1;
   }
   const overdue: { q: Question; due: string; revNo: number }[] = [];
   const byDate = new Map<string, { q: Question; revNo: number; total: number }[]>();
   for (let d = today; d <= end; d = addDays(d, 1)) byDate.set(d, []);
   for (const p of progress) {
-    const q = QUESTION_BY_ID.get(p.qid);
+    const q = byId.get(p.qid);
     if (!q) continue;
     const revs = p.revisions ?? [];
     revs.forEach((r, i) => {
@@ -281,6 +319,7 @@ export async function getTrackStates(user: AppUser) {
 
 export async function getProfileStats(user: AppUser) {
   await connectDB();
+  const cat = await getCatalog();
   const userId = oid(user.id);
   const today = todayIn(user.timezone);
   const [progress, topics] = await Promise.all([Progress.find({ userId }).lean(), TopicDone.find({ userId }).lean()]);
@@ -306,13 +345,14 @@ export async function getProfileStats(user: AppUser) {
   const byDifficulty = { Easy: 0, Medium: 0, Hard: 0 };
   const byGroup: Record<string, number> = {};
   for (const p of progress) {
-    const q = QUESTION_BY_ID.get(p.qid);
+    const q = cat.byId.get(p.qid);
     if (!q) continue;
     byDifficulty[q.difficulty]++;
     byGroup[q.group] = (byGroup[q.group] ?? 0) + 1;
   }
-  const groupTotals = Object.fromEntries(GROUPS.map((g) => [g, QUESTIONS.filter((q) => q.group === g).length]));
+  const groupTotals = cat.counts;
   const strongest = Object.entries(byGroup)
+    .filter(([g]) => groupTotals[g])
     .map(([g, n]) => ({ group: g, solved: n, pct: n / groupTotals[g] }))
     .sort((a, b) => b.pct - a.pct || b.solved - a.solved)[0];
 
@@ -322,16 +362,30 @@ export async function getProfileStats(user: AppUser) {
   return {
     memberDays: diffDays(today, user.joined) + 1,
     solved: progress.length,
-    totalQuestions: QUESTIONS.length,
+    totalQuestions: cat.questions.length,
     byDifficulty,
     revisionsDone: revs.filter((r) => r.doneOn).length,
     revisionsPending: revs.filter((r) => !r.doneOn && r.due <= today).length,
     mastered,
-    sdDone: topics.filter((t) => t.kind === "sd").length,
-    sqlDone: topics.filter((t) => t.kind === "sql").length,
+    tracks: trackTotals(cat, user, topics),
     activeDays: activeDays.size,
     longestStreak: longest,
     currentStreak: current,
     strongest: strongest ?? null,
   };
+}
+
+/** Per-day activity over the last `days` days, without creating a plan (safe for the admin view of another user). */
+export async function getActivityDays(user: AppUser, days = 30) {
+  await connectDB();
+  const userId = oid(user.id);
+  const today = todayIn(user.timezone);
+  const [progress, topics] = await Promise.all([Progress.find({ userId }).lean(), TopicDone.find({ userId }, { doneOn: 1 }).lean()]);
+  return activity(progress, topics.map((t) => t.doneOn), addDays(today, -(days - 1)), today);
+}
+
+/** The last `weeks` weeks of activity for the contribution calendar, starting on a Sunday so columns are whole weeks. */
+export async function getContributions(user: AppUser, weeks = 53) {
+  const today = todayIn(user.timezone);
+  return { today, days: await getActivityDays(user, weekdayOf(today) + 1 + (weeks - 1) * 7) };
 }

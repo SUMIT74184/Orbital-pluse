@@ -6,6 +6,7 @@ import { z } from "zod";
 import { connectDB } from "@/lib/db";
 import { User } from "@/lib/models";
 import { createSession, deleteSession } from "@/lib/session";
+import { logEvent } from "@/lib/events";
 
 export type AuthState = { error?: string; fields?: Record<string, string> } | undefined;
 
@@ -48,6 +49,7 @@ export async function signup(_: AuthState, formData: FormData): Promise<AuthStat
     throw err;
   }
   await createSession(String(user._id));
+  logEvent(String(user._id), "signup");
   redirect("/dashboard");
 }
 
@@ -62,6 +64,7 @@ export async function login(_: AuthState, formData: FormData): Promise<AuthState
   if (!ok) return { error: "Invalid email or password", fields };
 
   await createSession(String(user._id));
+  logEvent(String(user._id), "login");
   redirect("/dashboard");
 }
 

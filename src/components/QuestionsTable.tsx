@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { GROUPS, QUESTIONS, type Difficulty } from "@/data/catalog";
+import type { Difficulty, Question } from "@/data/catalog";
 import { formatDate } from "@/lib/dates";
 import { SolveToggle } from "./Toggles";
 import { QuestionTitle } from "./QuestionBits";
@@ -17,11 +17,15 @@ const STATUSES = [
 ];
 
 export function QuestionsTable({
+  questions,
+  groups,
   today,
   states,
   backlog,
   initialStatus,
 }: {
+  questions: Question[];
+  groups: string[];
   today: string;
   states: Record<number, State>;
   backlog: number[];
@@ -35,7 +39,7 @@ export function QuestionsTable({
 
   const rows = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return QUESTIONS.filter((x) => {
+    return questions.filter((x) => {
       const s = states[x.id];
       if (group !== "all" && x.group !== group) return false;
       if (diff !== "all" && x.difficulty !== diff) return false;
@@ -46,7 +50,7 @@ export function QuestionsTable({
       if (q && !`${x.title} ${x.companies.join(" ")} ${x.id}`.toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [query, group, diff, status, states, backlogSet, today]);
+  }, [questions, query, group, diff, status, states, backlogSet, today]);
 
   const select = "rounded-lg border border-line bg-panel px-3 py-2 text-sm outline-none focus:border-pulse";
 
@@ -61,7 +65,7 @@ export function QuestionsTable({
         />
         <select value={group} onChange={(e) => setGroup(e.target.value)} className={select} aria-label="Pattern">
           <option value="all">All patterns</option>
-          {GROUPS.map((g) => (
+          {groups.map((g) => (
             <option key={g}>{g}</option>
           ))}
         </select>

@@ -1,0 +1,25 @@
+name: Email reminders
+
+# Every user picks their own hour, so this pings the app hourly; the app only emails people whose time has come.
+on:
+  schedule:
+    - cron: "5 * * * *" # a few minutes past the hour; GitHub may start it later under load
+  workflow_dispatch:
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Send due reminders
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          # The endpoint stops after ~45 s and reports "more": true if users are still waiting.
+          for i in $(seq 1 8); do
+            body=$(curl -fsS --max-time 90 -H "Authorization: Bearer $CRON_SECRET" "$APP_URL/api/cron/reminders")
+            echo "$body"
+            echo "$body" | grep -q '"more":true' || exit 0
+            sleep 5
+          done

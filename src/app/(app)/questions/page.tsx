@@ -1,12 +1,15 @@
 import { requireUser } from "@/lib/auth";
 import { getQuestionStates } from "@/lib/plan";
+import { getCatalog } from "@/lib/catalog";
 import { QuestionsTable } from "@/components/QuestionsTable";
 
 export const metadata = { title: "Questions" };
 
 export default async function QuestionsPage({ searchParams }: PageProps<"/questions">) {
   const user = await requireUser();
-  const [{ today, states, backlog }, sp] = await Promise.all([getQuestionStates(user), searchParams]);
+  const [{ today, states, backlog }, cat, sp] = await Promise.all([getQuestionStates(user), getCatalog(), searchParams]);
+  // Archived questions stay listed only for people who already solved them.
+  const questions = [...cat.byId.values()].filter((q) => !q.archived || states[q.id]);
   const status = typeof sp.status === "string" ? sp.status : "all";
   return (
     <div className="space-y-5">
@@ -16,7 +19,7 @@ export default async function QuestionsPage({ searchParams }: PageProps<"/questi
           Solve anything ahead of schedule here — it will join your revision cycle from today.
         </p>
       </div>
-      <QuestionsTable today={today} states={states} backlog={backlog} initialStatus={status} />
+      <QuestionsTable questions={questions} groups={cat.groups} today={today} states={states} backlog={backlog} initialStatus={status} />
     </div>
   );
 }

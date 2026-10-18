@@ -2,16 +2,13 @@ import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { getDashboard } from "@/lib/plan";
 import { formatDate } from "@/lib/dates";
-import { QUESTIONS } from "@/data/catalog";
-import { TRACKS } from "@/data/topics";
+import { getCatalog } from "@/lib/catalog";
 import { MarketChart } from "@/components/MarketChart";
-import { ActivityBars, DifficultyBars, GroupBars, TodayProgress } from "@/components/Charts";
+import { ActivityBars, DifficultyBars, PatternRadar, TodayProgress } from "@/components/Charts";
 import { ReviseToggle, SolveToggle, TopicToggle } from "@/components/Toggles";
 import { QuestionTitle } from "@/components/QuestionBits";
 
 export const metadata = { title: "Dashboard" };
-
-const DIFF_TOTALS = QUESTIONS.reduce<Record<string, number>>((m, q) => ({ ...m, [q.difficulty]: (m[q.difficulty] ?? 0) + 1 }), {});
 
 function greeting(timezone: string) {
   const h = Number(new Intl.DateTimeFormat("en-US", { hour: "numeric", hourCycle: "h23", timeZone: timezone }).format(new Date()));
@@ -20,11 +17,11 @@ function greeting(timezone: string) {
 
 export default async function Dashboard() {
   const user = await requireUser();
-  const d = await getDashboard(user);
+  const [d, cat] = await Promise.all([getDashboard(user), getCatalog()]);
   const newDone = d.newItems.filter((i) => i.solvedOn).length;
   const revDone = d.revisions.filter((r) => r.done).length;
-  const sd = d.topics.find((t) => t.kind === "sd");
-  const sql = d.topics.find((t) => t.kind === "sql");
+  const trackDone = d.stats.tracks.reduce((n, t) => n + t.done, 0);
+  const trackTotal = d.stats.tracks.reduce((n, t) => n + t.total, 0);
 
   return (
     <div className="space-y-6">
@@ -51,35 +48,48 @@ export default async function Dashboard() {
         </div>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[1fr_20rem]">
-        <TodayProgress
-          percent={d.percent}
-          done={d.done}
-          total={d.total}
-          parts={[
-            { label: "New questions", done: newDone, total: d.newItems.length, color: "var(--color-new)" },
-            { label: "Revisions", done: revDone, total: d.revisions.length, color: "var(--color-rev)" },
-            { label: "System design", done: sd?.done ? 1 : 0, total: sd ? 1 : 0, color: "var(--color-topic)" },
-            { label: "MySQL", done: sql?.done ? 1 : 0, total: sql ? 1 : 0, color: "var(--color-topic)" },
-          ]}
-        />
-        <section className="card grid grid-cols-2 gap-4 p-5">
-          <Stat label="Solved" value={`${d.stats.solved}`} sub={`of ${d.stats.totalQuestions}`} />
-          <Stat label="Streak" value={`${d.streak}`} sub={d.streak === 1 ? "day" : "days"} />
-          <Stat label="Revisions" value={`${d.stats.revisionsDone}`} sub={`of ${d.stats.revisionsTotal} scheduled`} />
-          <Stat label="SD / SQL" value={`${d.stats.sdDone} / ${d.stats.sqlDone}`} sub={`of ${TRACKS.sd.topics.length} / ${TRACKS.sql.topics.length}`} />
-          <div className="col-span-2">
-            <DifficultyBars byDifficulty={d.stats.byDifficulty} totals={DIFF_TOTALS} />
-          </div>
-        </section>
-      </div>
+      {!user.goal && (
+        <Link
+          href="/profile#goal"
+          className="card flex flex-wrap items-center justify-between gap-2 border-pulse/30 px-4 py-3 text-sm hover:border-pulse/60"
+        >
+          <span>
+            <span className="font-semibold text-pulse">Set your goal</span>
+            <span className="text-muted"> — target role, companies and date, so your prep has a finish line.</span>
+          </span>
+          <span className="text-xs text-muted">Profile →</span>
+        </Link>
+      )}
 
-      <MarketChart
-        days={d.days}
-        joined={user.joined}
-        streak={d.streak}
-        targetPoints={user.dailyTarget * 3 + (user.tracks.sd ? 2 : 0) + (user.tracks.sql ? 2 : 0)}
-      />
+      {/* Where you stand today, next to the pattern radar. */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        <div className="flex flex-col gap-4">
+          <TodayProgress
+            percent={d.percent}
+            done={d.done}
+            total={d.total}
+            parts={[
+              { label: "New questions", done: newDone, total: d.newItems.length, color: "var(--color-new)" },
+              { label: "Revisions", done: revDone, total: d.revisions.length, color: "var(--color-rev)" },
+              ...d.topics.map((t) => ({ label: t.trackName, done: t.done ? 1 : 0, total: 1, color: "var(--color-topic)" })),
+            ]}
+          />
+          <section className="card grid flex-1 grid-cols-2 content-between gap-4 p-5">
+            <Stat label="Solved" value={`${d.stats.solved}`} sub={`of ${d.stats.totalQuestions}`} />
+            <Stat label="Streak" value={`${d.streak}`} sub={d.streak === 1 ? "day" : "days"} />
+            <Stat label="Revisions" value={`${d.stats.revisionsDone}`} sub={`of ${d.stats.revisionsTotal} scheduled`} />
+            <Stat
+              label={d.stats.tracks.length === 2 ? d.stats.tracks.map((t) => t.name).join(" / ") : "Track topics"}
+              value={d.stats.tracks.length === 2 ? d.stats.tracks.map((t) => t.done).join(" / ") : `${trackDone}`}
+              sub={`of ${d.stats.tracks.length === 2 ? d.stats.tracks.map((t) => t.total).join(" / ") : trackTotal}`}
+            />
+            <div className="col-span-2">
+              <DifficultyBars byDifficulty={d.stats.byDifficulty} totals={cat.diffTotals} />
+            </div>
+          </section>
+        </div>
+        <PatternRadar groups={d.stats.byGroup} />
+      </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
         <div className="space-y-4">
@@ -127,7 +137,7 @@ export default async function Dashboard() {
           {d.topics.map((t) => (
             <Panel
               key={t.kind}
-              title={`${TRACKS[t.kind].name} · topic ${t.topic.id}/${TRACKS[t.kind].topics.length}`}
+              title={`${t.trackName} · topic ${t.position || "–"}/${t.trackTotal}`}
               accent="var(--color-topic)"
               count={t.done ? "done" : "today"}
             >
@@ -182,10 +192,14 @@ export default async function Dashboard() {
         </div>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <ActivityBars days={d.days.slice(-14)} />
-        <GroupBars groups={d.stats.byGroup} />
-      </div>
+      {/* Trends over time. */}
+      <MarketChart
+        days={d.days}
+        joined={user.joined}
+        streak={d.streak}
+        targetPoints={user.dailyTarget * 3 + d.stats.tracks.filter((t) => t.on).length * 2}
+      />
+      <ActivityBars days={d.days.slice(-14)} />
     </div>
   );
 }

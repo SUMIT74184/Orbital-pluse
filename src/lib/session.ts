@@ -5,7 +5,8 @@ import { cookies } from "next/headers";
 export const SESSION_COOKIE = "session";
 const MAX_AGE = 60 * 60 * 24 * 30; // 30 days
 
-function key() {
+/** HS256 key for the session cookie and other signed links (e.g. email unsubscribe). */
+export function key() {
   const secret = process.env.AUTH_SECRET;
   if (!secret || secret.length < 32) throw new Error("AUTH_SECRET must be set (32+ characters)");
   return new TextEncoder().encode(secret);
