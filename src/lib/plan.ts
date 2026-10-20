@@ -5,7 +5,7 @@ import { Plan, Progress, TopicDone, type PlanDoc, type ProgressDoc } from "./mod
 import type { AppUser } from "./auth";
 import { addDays, diffDays, todayIn, weekdayOf } from "./dates";
 import { getCatalog, trackOn, type Catalog, type CatalogTrack } from "./catalog";
-import type { Question } from "@/data/catalog";
+import type { Difficulty, Question } from "@/data/catalog";
 import type { Topic, TrackKind } from "@/data/topics";
 
 const oid = (id: string) => new Types.ObjectId(id);
@@ -256,36 +256,68 @@ export async function getDashboard(user: AppUser) {
   };
 }
 
-/** Revisions coming up over the next `days` days, grouped by date (overdue first). */
-export async function getUpcoming(user: AppUser, days = 14) {
+export type CalendarItem = {
+  qid: number;
+  title: string;
+  url: string;
+  group: string;
+  difficulty: Difficulty;
+  revNo: number;
+  revTotal: number;
+  due: string;
+  doneOn: string | null;
+};
+
+/**
+ * Every revision due from `back` days ago to `ahead` days out (done or not), plus everything still overdue,
+ * and how many questions are waiting on each revision round.
+ */
+export async function getRevisionCalendar(user: AppUser, back = 42, ahead = 70) {
   await connectDB();
   const { byId } = await getCatalog();
   const today = todayIn(user.timezone);
-  const end = addDays(today, days - 1);
+  const from = addDays(today, -back);
+  const to = addDays(today, ahead);
   const progress = await Progress.find({ userId: oid(user.id) }).lean();
+
   const solvedByGroup: Record<string, number> = {};
-  for (const p of progress) {
-    const g = byId.get(p.qid)?.group;
-    if (g) solvedByGroup[g] = (solvedByGroup[g] ?? 0) + 1;
-  }
-  const overdue: { q: Question; due: string; revNo: number }[] = [];
-  const byDate = new Map<string, { q: Question; revNo: number; total: number }[]>();
-  for (let d = today; d <= end; d = addDays(d, 1)) byDate.set(d, []);
+  const items: CalendarItem[] = [];
+  const overdue: CalendarItem[] = [];
+  const stages: number[] = user.revisionDays.map(() => 0); // questions whose next revision is round i + 1
+  let mastered = 0;
   for (const p of progress) {
     const q = byId.get(p.qid);
     if (!q) continue;
+    solvedByGroup[q.group] = (solvedByGroup[q.group] ?? 0) + 1;
     const revs = p.revisions ?? [];
+    const next = revs.findIndex((r) => !r.doneOn);
+    if (revs.length && next < 0) mastered++;
+    else if (next >= 0) stages[next] = (stages[next] ?? 0) + 1;
     revs.forEach((r, i) => {
-      if (r.doneOn) return;
-      if (r.due < today) overdue.push({ q, due: r.due, revNo: i + 1 });
-      else byDate.get(r.due)?.push({ q, revNo: i + 1, total: revs.length });
+      const item: CalendarItem = {
+        qid: q.id,
+        title: q.title,
+        url: q.url,
+        group: q.group,
+        difficulty: q.difficulty,
+        revNo: i + 1,
+        revTotal: revs.length,
+        due: r.due,
+        doneOn: r.doneOn ?? null,
+      };
+      if (!r.doneOn && r.due < today) overdue.push(item);
+      if (r.due >= from && r.due <= to) items.push(item);
     });
   }
   return {
     today,
-    solvedByGroup,
+    from,
+    to,
+    items: items.sort((a, b) => a.due.localeCompare(b.due) || b.revNo - a.revNo),
     overdue: overdue.sort((a, b) => a.due.localeCompare(b.due)),
-    days: [...byDate].map(([date, items]) => ({ date, weekday: weekdayOf(date), groups: user.schedule[weekdayOf(date)] ?? [], items })),
+    solvedByGroup,
+    stages: stages.map((n) => n ?? 0),
+    mastered,
   };
 }
 

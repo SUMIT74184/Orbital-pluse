@@ -56,11 +56,61 @@ async function ensureSeeded() {
   await Meta.updateOne({ _id: "catalog-seeded" }, { $set: { at: new Date() } }, { upsert: true });
 }
 
+const seedTrack = (key: string) => SEED_TRACKS.find((t) => t.key === key)!;
+
+/** Content changes to the seed that existing databases need too. Each runs once, keyed in Meta. */
+const CATALOG_UPDATES: { id: string; run: () => Promise<unknown> }[] = [
+  {
+    // MySQL practice moved from LeetCode to DataLemur.
+    id: "sql-datalemur-v1",
+    run: async () => {
+      const sql = seedTrack("sql");
+      await Track.updateOne({ key: "sql" }, { $set: { description: sql.description } });
+      await TrackTopic.bulkWrite(
+        sql.topics
+          .filter((t) => t.practice)
+          .map((t) => ({ updateOne: { filter: { track: "sql", topicId: t.id }, update: { $set: { practice: t.practice } } } })),
+      );
+    },
+  },
+  {
+    id: "dbms-track-v1",
+    run: async () => {
+      const dbms = seedTrack("dbms");
+      const order = await Track.countDocuments();
+      await Track.updateOne(
+        { key: dbms.key },
+        { $setOnInsert: { key: dbms.key, name: dbms.name, description: dbms.description, order, defaultOn: true, archived: false } },
+        { upsert: true },
+      );
+      await TrackTopic.bulkWrite(
+        dbms.topics.map(({ id, ...topic }) => ({
+          updateOne: {
+            filter: { track: dbms.key, topicId: id },
+            update: { $setOnInsert: { ...topic, practice: topic.practice ?? [], track: dbms.key, topicId: id, order: id, archived: false } },
+            upsert: true,
+          },
+        })),
+      );
+    },
+  },
+];
+
+async function applyCatalogUpdates() {
+  const applied = new Set((await Meta.find({ _id: { $in: CATALOG_UPDATES.map((u) => u.id) } }, { _id: 1 }).lean()).map((m) => m._id));
+  for (const u of CATALOG_UPDATES) {
+    if (applied.has(u.id)) continue;
+    await u.run();
+    await Meta.updateOne({ _id: u.id }, { $set: { at: new Date() } }, { upsert: true });
+  }
+}
+
 // Shared across requests (and instances, on Vercel) until an admin edit calls invalidateCatalog().
 const loadCatalog = unstable_cache(
   async () => {
     await connectDB();
     await ensureSeeded();
+    await applyCatalogUpdates();
     const [questions, tracks, topics] = await Promise.all([
       QuestionModel.find({}, { _id: 0, __v: 0, createdAt: 0, updatedAt: 0 }).sort({ qid: 1 }).lean(),
       Track.find({}, { _id: 0, __v: 0, createdAt: 0, updatedAt: 0 }).sort({ order: 1, key: 1 }).lean(),
@@ -68,7 +118,7 @@ const loadCatalog = unstable_cache(
     ]);
     return { questions, tracks, topics };
   },
-  ["catalog-v1"],
+  ["catalog-v2"],
   { tags: [CATALOG_TAG] },
 );
 
