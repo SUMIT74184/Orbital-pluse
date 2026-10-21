@@ -28,6 +28,7 @@ export default async function AdminOverview() {
           active on a day they open the app.
         </p>
       </div>
+      {/* re */}
 
       <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <StatTile label="Users" value={t.users} sub={`+${t.new7} this week · +${t.new30} in 30 days`} />
