@@ -50,7 +50,7 @@ export function QuestionManager({ questions, groups }: { questions: Row[]; group
                   <span className="font-mono">#{q.id}</span>·<span>{q.group}</span>
                   <DifficultyBadge d={q.difficulty} />
                   <span>· solved by {q.users}</span>
-                  {q.companies.length > 0 && <span className="hidden truncate sm:inline">· {q.companies.join(", ")}</span>}
+                  {q.companies.length > 0 && <span className="hidden truncate sm:inline">· {q.companies.length} companies</span>}
                 </div>
               </>
             }

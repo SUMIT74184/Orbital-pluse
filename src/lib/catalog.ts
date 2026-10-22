@@ -94,6 +94,14 @@ const CATALOG_UPDATES: { id: string; run: () => Promise<unknown> }[] = [
       );
     },
   },
+  {
+    // Company tags from github.com/liquidslr/leetcode-company-wise-problems, most frequent first.
+    id: "companies-liquidslr-v1",
+    run: () =>
+      QuestionModel.bulkWrite(
+        SEED_QUESTIONS.map((q) => ({ updateOne: { filter: { qid: q.id }, update: { $set: { companies: q.companies } } } })),
+      ),
+  },
 ];
 
 async function applyCatalogUpdates() {
@@ -118,7 +126,7 @@ const loadCatalog = unstable_cache(
     ]);
     return { questions, tracks, topics };
   },
-  ["catalog-v2"],
+  ["catalog-v3"],
   { tags: [CATALOG_TAG] },
 );
 

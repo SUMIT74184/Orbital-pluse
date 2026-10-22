@@ -34,7 +34,7 @@ const questionSchema = z.object({
   difficulty: z.enum(["Easy", "Medium", "Hard"]),
   companies: z
     .string()
-    .max(400)
+    .max(4000)
     .transform((s) => [...new Set(s.split(",").map((c) => c.trim()).filter(Boolean))]),
 });
 

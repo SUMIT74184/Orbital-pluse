@@ -6,6 +6,7 @@ A multi-user tracker for DSA, System Design and MySQL interview prep. Built with
 - **Spaced revision**: each solved question comes back after 1, 4, 6, 10, 15 and 21 days. One review clears every round that has piled up.
 - **Backlog**: questions you were given on earlier days but didn't solve stay on your list.
 - **One System Design topic and one MySQL topic a day.** The MySQL topics come with LeetCode SQL practice links.
+- **Company tags**: each question shows logos of the companies that ask it (most frequent first), from [liquidslr/leetcode-company-wise-problems](https://github.com/liquidslr/leetcode-company-wise-problems). The Questions page is grouped by pattern and can be filtered by company.
 - **Dashboard**: today's progress bar, a stock-market style candlestick chart ($DSAX prep index), a 14-day stacked bar chart, and per-pattern and per-difficulty progress.
 - **Revision plan**: the next 14 days of revisions and any that are overdue.
 - **Settings**: daily target, revision days, timezone, and which patterns go on which weekday.
@@ -32,12 +33,6 @@ cp .env.example .env.local            # then set AUTH_SECRET: openssl rand -base
 docker compose up -d mongo            # MongoDB on localhost:27017
 npm install
 npm run dev                           # http://localhost:3000
-```
-
-To run the whole app in Docker (production build):
-
-```bash
-docker compose --profile app up -d --build   # app on :3000, reads AUTH_SECRET from .env.local
 ```
 
 ## Deploy to Vercel (Hobby)

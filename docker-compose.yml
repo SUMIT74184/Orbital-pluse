@@ -13,21 +13,5 @@ services:
       timeout: 5s
       retries: 5
 
-  # Full production-like stack: `docker compose up --build`.
-  # For day-to-day development just run `docker compose up -d mongo` and `npm run dev`.
-  app:
-    build: .
-    profiles: ["app"]
-    depends_on:
-      mongo:
-        condition: service_healthy
-    ports:
-      - "3000:3000"
-    env_file:
-      - path: .env.local # provides AUTH_SECRET
-        required: false
-    environment:
-      MONGODB_URI: mongodb://mongo:27017/dsa_tracker
-
 volumes:
   mongo-data:
