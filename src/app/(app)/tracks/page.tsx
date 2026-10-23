@@ -3,6 +3,8 @@ import { getTrackStates } from "@/lib/plan";
 import { formatDate } from "@/lib/dates";
 import { getCatalog, trackOn } from "@/lib/catalog";
 import { TopicToggle } from "@/components/Toggles";
+import { TopicInterview } from "@/components/TopicInterview";
+import { hasInterviewQA } from "@/data/interview";
 
 export const metadata = { title: "Tracks" };
 
@@ -54,10 +56,14 @@ export default async function TracksPage() {
                           <li key={t.id} className="flex gap-3 px-4 py-3">
                             <TopicToggle kind={kind} id={t.id} done={!!doneOn} />
                             <div className="min-w-0 flex-1">
-                              <p className={`text-sm font-medium ${doneOn ? "text-muted line-through" : ""}`}>
+                              <div className={`text-sm font-medium ${doneOn ? "text-muted line-through" : ""}`}>
                                 <span className="mr-2 font-mono text-xs text-muted">{track.topics.indexOf(t) + 1}.</span>
-                                {t.title}
-                              </p>
+                                {hasInterviewQA(kind, t.id) ? (
+                                  <TopicInterview kind={kind} id={t.id} title={t.title} section={t.section} />
+                                ) : (
+                                  t.title
+                                )}
+                              </div>
                               <p className="mt-0.5 text-xs text-muted">{t.points.join(" · ")}</p>
                               {t.practice && (
                                 <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-xs">

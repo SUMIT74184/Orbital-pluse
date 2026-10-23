@@ -5,8 +5,10 @@ import { formatDate } from "@/lib/dates";
 import { getCatalog } from "@/lib/catalog";
 import { MarketChart } from "@/components/MarketChart";
 import { ActivityBars, DifficultyBars, PatternRadar, TodayProgress } from "@/components/Charts";
-import { ReviseToggle, SolveToggle, TopicToggle } from "@/components/Toggles";
+import { ReviseRating, ReviseToggle, SolveToggle, TopicToggle } from "@/components/Toggles";
 import { QuestionTitle } from "@/components/QuestionBits";
+import { TopicInterview } from "@/components/TopicInterview";
+import { hasInterviewQA } from "@/data/interview";
 
 export const metadata = { title: "Dashboard" };
 
@@ -113,13 +115,14 @@ export default async function Dashboard() {
             action={<Link href="/schedule" className="text-xs text-muted hover:text-ink">Upcoming →</Link>}
           >
             {d.revisions.length === 0 ? (
-              <Empty>Nothing due. Revisions show up {user.revisionDays.join(", ")} days after you solve a question.</Empty>
+              <Empty>Nothing due. Revisions show up {user.revisionDays.join(", ")} days after you solve a question. Tick to mark revised, or rate it Easy / Forgot.</Empty>
             ) : (
               d.revisions.map((r) => (
                 <Row key={r.q.id}>
                   <ReviseToggle qid={r.q.id} done={r.done} />
                   <div className="min-w-0 flex-1">
                     <QuestionTitle q={r.q} muted={r.done} />
+                    {!r.done && <ReviseRating qid={r.q.id} />}
                   </div>
                   <div className="shrink-0 text-right text-xs">
                     <div className="font-mono text-rev">
@@ -144,7 +147,13 @@ export default async function Dashboard() {
               <div className="flex gap-3 px-4 py-3.5">
                 <TopicToggle kind={t.kind} id={t.topic.id} done={t.done} />
                 <div className="min-w-0">
-                  <p className={`font-medium ${t.done ? "text-muted line-through" : ""}`}>{t.topic.title}</p>
+                  <div className={`font-medium ${t.done ? "text-muted line-through" : ""}`}>
+                    {hasInterviewQA(t.kind, t.topic.id) ? (
+                      <TopicInterview kind={t.kind} id={t.topic.id} title={t.topic.title} section={t.topic.section} />
+                    ) : (
+                      t.topic.title
+                    )}
+                  </div>
                   <p className="text-xs text-muted">{t.topic.section}</p>
                   <ul className="mt-2 list-disc space-y-0.5 pl-4 text-sm text-muted marker:text-topic">
                     {t.topic.points.map((p) => (

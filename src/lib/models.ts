@@ -53,6 +53,7 @@ export interface EmailLogDoc {
 }
 
 export interface Revision {
+  round?: number; // 1-based place in its cycle; "Forgot" starts a new cycle at round 1. Missing on old docs.
   offset: number;
   due: string;
   doneOn: string | null;
@@ -64,6 +65,7 @@ export interface ProgressDoc {
   qid: number;
   solvedOn: string;
   revisions: Revision[];
+  undo?: { on: string; revisions: Revision[] } | null; // rounds before today's review, so it can be undone
 }
 
 export interface PlanDoc {
@@ -153,7 +155,7 @@ const userSchema = new Schema<UserDoc>(
     passwordHash: { type: String, required: true },
     timezone: { type: String, default: "Asia/Kolkata" },
     dailyTarget: { type: Number, default: 3 },
-    revisionDays: { type: [Number], default: [1, 4, 6, 10, 15, 21] },
+    revisionDays: { type: [Number], default: [1, 3, 7, 14, 30, 45, 60] },
     // Index = weekday (0 = Sunday); each entry lists the question groups for that day.
     schedule: { type: [[String]], default: undefined },
     tracks: { type: Map, of: Boolean, default: undefined },
@@ -189,20 +191,25 @@ const userSchema = new Schema<UserDoc>(
 userSchema.index({ "reminders.dailyAt": 1 });
 userSchema.index({ "reminders.weeklyAt": 1 });
 
-// One document per solved question per user. Revisions are fixed offsets from the solve date.
+const revisionSchema = new Schema(
+  {
+    round: Number,
+    offset: Number,
+    due: String,
+    doneOn: { type: String, default: null },
+  },
+  { _id: false },
+);
+
+// One document per solved question per user. Revisions start as fixed offsets from the solve date;
+// rating a review "Easy" drops the next round and "Forgot" restarts the schedule from that day.
 const progressSchema = new Schema<ProgressDoc>(
   {
     userId: { type: Schema.Types.ObjectId, required: true, index: true },
     qid: { type: Number, required: true },
     solvedOn: { type: String, required: true }, // YYYY-MM-DD in the user's timezone
-    revisions: [
-      {
-        _id: false,
-        offset: Number,
-        due: String,
-        doneOn: { type: String, default: null },
-      },
-    ],
+    revisions: [revisionSchema],
+    undo: { type: new Schema({ on: String, revisions: [revisionSchema] }, { _id: false }), default: undefined },
   },
   { timestamps: true },
 );

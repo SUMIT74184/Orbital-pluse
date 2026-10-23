@@ -65,6 +65,23 @@ export function ReviseToggle({ qid, done }: { qid: number; done: boolean }) {
   );
 }
 
+/** Rates a due revision instead of plain "revised": Forgot restarts its schedule, Easy skips the next round. */
+export function ReviseRating({ qid }: { qid: number }) {
+  const [pending, start] = useTransition();
+  const rate = (rating: "forgot" | "easy") => () => start(() => reviseQuestion(qid, rating));
+  const pill = "rounded-md border px-2 py-0.5 text-[11px] font-medium transition hover:bg-panel-2 disabled:opacity-50";
+  return (
+    <div className="mt-1.5 flex gap-1.5">
+      <button type="button" disabled={pending} onClick={rate("forgot")} title="Forgot it: restart this question's schedule from today" className={`${pill} border-hard/40 text-hard`}>
+        Forgot
+      </button>
+      <button type="button" disabled={pending} onClick={rate("easy")} title="Easy: skip the next revision round" className={`${pill} border-easy/40 text-easy`}>
+        Easy
+      </button>
+    </div>
+  );
+}
+
 export function TopicToggle({ kind, id, done }: { kind: TrackKind; id: number; done: boolean }) {
   const [pending, start] = useTransition();
   return (

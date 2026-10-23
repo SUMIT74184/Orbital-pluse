@@ -440,7 +440,7 @@ function Agenda({
               </span>
               <span className="flex min-w-0 flex-1 flex-wrap gap-1">
                 {list.slice(0, 4).map((i) => (
-                  <span key={`${i.qid}-${i.revNo}`} className="flex max-w-48 items-center gap-1.5 truncate rounded-md bg-panel-2 px-2 py-0.5 text-xs">
+                  <span key={`${i.qid}-${i.due}`} className="flex max-w-48 items-center gap-1.5 truncate rounded-md bg-panel-2 px-2 py-0.5 text-xs">
                     <span className="size-1.5 shrink-0 rounded-full" style={{ background: groupColors[i.group] }} />
                     <span className="truncate">{i.title}</span>
                   </span>
@@ -543,7 +543,7 @@ function DayPanel({
             {items.map((i) => {
               const s = STATUS_STYLE[statusOf(i, today)];
               return (
-                <li key={`${i.qid}-${i.revNo}`} className="rounded-lg border border-line bg-panel p-2.5">
+                <li key={`${i.qid}-${i.due}`} className="rounded-lg border border-line bg-panel p-2.5">
                   <div className="flex items-start justify-between gap-2">
                     <a href={i.url} target="_blank" rel="noopener noreferrer" className="min-w-0 text-sm font-medium leading-snug hover:text-pulse">
                       {i.title}

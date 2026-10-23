@@ -30,5 +30,5 @@ export const DEFAULT_SCHEDULE: string[][] = [
   ["Graphs"],
 ];
 
-export const DEFAULT_REVISION_DAYS = [1, 4, 6, 10, 15, 21];
+export const DEFAULT_REVISION_DAYS = [1, 3, 7, 14, 30, 45, 60];
 export const DEFAULT_DAILY_TARGET = 3;

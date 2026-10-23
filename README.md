@@ -3,7 +3,7 @@
 A multi-user tracker for DSA, System Design and MySQL interview prep. Built with Next.js 16 (App Router) and MongoDB.
 
 - **3 new questions a day** (you can change this), picked from that weekday's patterns. There are 349 questions from `Prac_84 -New.pdf`.
-- **Spaced revision**: each solved question comes back after 1, 4, 6, 10, 15 and 21 days. One review clears every round that has piled up.
+- **Spaced revision**: each solved question comes back after 1, 3, 7, 14, 30, 45 and 60 days. Rate a review **Easy** to skip the next round, or **Forgot** to restart the schedule from today. One review clears every round that has piled up.
 - **Backlog**: questions you were given on earlier days but didn't solve stay on your list.
 - **One System Design topic and one MySQL topic a day.** The MySQL topics come with LeetCode SQL practice links.
 - **Company tags**: each question shows logos of the companies that ask it (most frequent first), from [liquidslr/leetcode-company-wise-problems](https://github.com/liquidslr/leetcode-company-wise-problems). The Questions page is grouped by pattern and can be filtered by company.

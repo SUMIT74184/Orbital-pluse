@@ -1,7 +1,7 @@
 import "server-only";
 import { Types } from "mongoose";
 import { connectDB } from "./db";
-import { Plan, Progress, TopicDone, type PlanDoc, type ProgressDoc } from "./models";
+import { Plan, Progress, TopicDone, type PlanDoc, type ProgressDoc, type Revision } from "./models";
 import type { AppUser } from "./auth";
 import { addDays, diffDays, todayIn, weekdayOf } from "./dates";
 import { getCatalog, trackOn, type Catalog, type CatalogTrack } from "./catalog";
@@ -119,6 +119,14 @@ export type TopicItem = {
   doneToday: boolean;
 };
 
+/** A revision's round within its cycle ("Forgot" restarts at round 1) and the last round that cycle reaches. */
+function roundOf(revs: Revision[], i: number) {
+  const no = (k: number) => revs[k].round ?? k + 1;
+  let end = i;
+  while (end + 1 < revs.length && no(end + 1) > no(end)) end++;
+  return { revNo: no(i), revTotal: no(end) };
+}
+
 function revisionItems(progress: ProgressDoc[], today: string, cat: Catalog): RevisionItem[] {
   const items: RevisionItem[] = [];
   for (const p of progress) {
@@ -131,9 +139,9 @@ function revisionItems(progress: ProgressDoc[], today: string, cat: Catalog): Re
       const due = revs[pendingIdx].due;
       // If several revisions piled up, one review today clears all of them.
       const lastDue = revs.findLastIndex((r) => !r.doneOn && r.due <= today);
-      items.push({ q, revNo: lastDue + 1, revTotal: revs.length, due, overdueBy: diffDays(today, due), done: false });
+      items.push({ q, ...roundOf(revs, lastDue), due, overdueBy: diffDays(today, due), done: false });
     } else if (doneTodayIdx >= 0) {
-      items.push({ q, revNo: doneTodayIdx + 1, revTotal: revs.length, due: revs[doneTodayIdx].due, overdueBy: 0, done: true });
+      items.push({ q, ...roundOf(revs, doneTodayIdx), due: revs[doneTodayIdx].due, overdueBy: 0, done: true });
     }
   }
   return items.sort((a, b) => Number(a.done) - Number(b.done) || b.overdueBy - a.overdueBy);
@@ -292,7 +300,10 @@ export async function getRevisionCalendar(user: AppUser, back = 42, ahead = 70) 
     const revs = p.revisions ?? [];
     const next = revs.findIndex((r) => !r.doneOn);
     if (revs.length && next < 0) mastered++;
-    else if (next >= 0) stages[next] = (stages[next] ?? 0) + 1;
+    else if (next >= 0) {
+      const stage = roundOf(revs, next).revNo - 1;
+      stages[stage] = (stages[stage] ?? 0) + 1;
+    }
     revs.forEach((r, i) => {
       const item: CalendarItem = {
         qid: q.id,
@@ -300,8 +311,7 @@ export async function getRevisionCalendar(user: AppUser, back = 42, ahead = 70) 
         url: q.url,
         group: q.group,
         difficulty: q.difficulty,
-        revNo: i + 1,
-        revTotal: revs.length,
+        ...roundOf(revs, i),
         due: r.due,
         doneOn: r.doneOn ?? null,
       };
@@ -332,11 +342,13 @@ export async function getQuestionStates(user: AppUser) {
   const states: Record<number, { solvedOn: string; nextDue: string | null; revDone: number; revTotal: number }> = {};
   for (const p of progress) {
     const revs = p.revisions ?? [];
+    const next = revs.findIndex((r) => !r.doneOn);
+    const round = next >= 0 ? roundOf(revs, next) : null;
     states[p.qid] = {
       solvedOn: p.solvedOn,
-      nextDue: revs.find((r) => !r.doneOn)?.due ?? null,
-      revDone: revs.filter((r) => r.doneOn).length,
-      revTotal: revs.length,
+      nextDue: next >= 0 ? revs[next].due : null,
+      revDone: round ? round.revNo - 1 : revs.length,
+      revTotal: round ? round.revTotal : revs.length,
     };
   }
   const backlog = [...new Set(pastPlans.flatMap((p) => p.newQids))].filter((id) => !states[id]);
