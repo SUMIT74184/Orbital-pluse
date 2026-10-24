@@ -26,7 +26,7 @@ export default async function TracksPage() {
         const enabled = trackOn(user.tracks, track);
         const sections = [...new Set(track.topics.map((t) => t.section))];
         return (
-          <section key={kind} className="space-y-3">
+          <section key={kind} id={kind} className="scroll-mt-20 space-y-3">
             <div className="flex flex-wrap items-center gap-3">
               <h2 className="text-lg font-semibold" title={track.description}>{track.name}</h2>
               <span className="font-mono text-xs text-muted">

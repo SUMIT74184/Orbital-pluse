@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { jwtVerify } from "jose";
 
-const PROTECTED = ["/dashboard", "/questions", "/schedule", "/tracks", "/settings", "/profile", "/admin"];
+const PROTECTED = ["/dashboard", "/questions", "/schedule", "/tracks", "/settings", "/profile", "/admin", "/random"];
 const AUTH_PAGES = ["/login", "/signup"];
 
 // Optimistic check only: pages and actions still verify the user through the data access layer.

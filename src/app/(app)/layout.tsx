@@ -1,50 +1,72 @@
-import Link from "next/link";
-import { Logo } from "@/components/Logo";
-import { NavLinks } from "@/components/NavLinks";
-import { Avatar } from "@/components/Avatar";
+import { Suspense } from "react";
+import { cookies } from "next/headers";
 import { AmbientBackground } from "@/components/AmbientBackground";
+import { Sidebar, type NavItem } from "@/components/nav/Sidebar";
+import { RightRail } from "@/components/nav/RightRail";
+import { RailContent, RailSkeleton } from "@/components/nav/RailContent";
+import { NAV_COOKIE, RAIL_COOKIE } from "@/components/nav/cookies";
 import { requireUser } from "@/lib/auth";
-import { logout } from "@/app/actions/auth";
+import { getCatalog } from "@/lib/catalog";
 
 export default async function AppLayout({ children }: LayoutProps<"/">) {
-  const user = await requireUser();
-  const profileLink = (
-    <Link href="/profile" className="flex items-center gap-2 rounded-full py-0.5 pl-0.5 pr-3 text-sm hover:bg-panel-2" title="Your profile">
-      <Avatar name={user.name} seed={user.id} size={28} />
-      <span className="max-w-32 truncate text-muted">{user.name.split(" ")[0]}</span>
-    </Link>
-  );
-  const adminLink = user.isAdmin && (
-    <Link href="/admin" className="rounded-lg border border-topic/40 px-2.5 py-1 text-xs font-medium text-topic hover:bg-topic/10">
-      Admin
-    </Link>
-  );
+  const [user, cat, jar] = await Promise.all([requireUser(), getCatalog(), cookies()]);
+  const items: NavItem[] = [
+    { href: "/", label: "Home", icon: "home", exact: true },
+    { href: "/dashboard", label: "Dashboard", icon: "dashboard" },
+    {
+      href: "/questions",
+      label: "Questions",
+      icon: "questions",
+      children: [
+        { href: "/questions", label: "All questions" },
+        { href: "/questions?status=todo", label: "Unsolved" },
+        { href: "/questions?status=solved", label: "Solved" },
+        { href: "/questions?status=backlog", label: "Backlog" },
+        { href: "/questions?status=due", label: "Revision due" },
+      ],
+    },
+    {
+      href: "/schedule",
+      label: "Revision plan",
+      icon: "revision",
+      children: [
+        { href: "/schedule#calendar", label: "Calendar" },
+        { href: "/schedule#rotation", label: "Weekly rotation" },
+      ],
+    },
+    { href: "/tracks", label: "Tracks", icon: "tracks", children: cat.tracks.map((t) => ({ href: `/tracks#${t.key}`, label: t.name })) },
+    {
+      href: "/settings",
+      label: "Settings",
+      icon: "settings",
+      children: [
+        { href: "/settings", label: "Study plan" },
+        { href: "/profile", label: "Profile" },
+        { href: "/profile#goal", label: "Goal" },
+        { href: "/profile#reminders", label: "Email reminders" },
+      ],
+    },
+  ];
+
   return (
     <>
       <AmbientBackground />
-      <header className="sticky top-0 z-20 border-b border-line bg-bg/85 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:gap-6 sm:px-6">
-          <div className="flex items-center justify-between">
-            <Logo href="/dashboard" />
-            <div className="flex items-center gap-2 sm:hidden">
-              {adminLink}
-              {profileLink}
-              <form action={logout}>
-                <button className="text-sm text-muted hover:text-ink">Log out</button>
-              </form>
-            </div>
-          </div>
-          <NavLinks />
-          <div className="ml-auto hidden items-center gap-2 sm:flex">
-            {adminLink}
-            {profileLink}
-            <form action={logout}>
-              <button className="rounded-lg border border-line px-3 py-1.5 text-sm text-muted hover:border-muted hover:text-ink">Log out</button>
-            </form>
-          </div>
-        </div>
-      </header>
-      <main className="relative z-10 mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6">{children}</main>
+      <div className="relative z-10 flex flex-1 flex-col lg:flex-row">
+        <Sidebar
+          items={items}
+          initialCollapsed={jar.get(NAV_COOKIE)?.value === "collapsed"}
+          logoHref="/dashboard"
+          user={{ id: user.id, name: user.name, isAdmin: user.isAdmin }}
+        />
+        <main className="min-w-0 flex-1 px-4 py-6 sm:px-6">
+          <div className="mx-auto w-full max-w-6xl">{children}</div>
+        </main>
+        <RightRail initialCollapsed={jar.get(RAIL_COOKIE)?.value === "collapsed"}>
+          <Suspense fallback={<RailSkeleton />}>
+            <RailContent user={user} />
+          </Suspense>
+        </RightRail>
+      </div>
     </>
   );
 }

@@ -36,7 +36,7 @@ export function ReminderForm({
   const box = "h-4 w-4 accent-[var(--color-pulse)]";
 
   return (
-    <section className="card space-y-4 p-5">
+    <section id="reminders" className="card scroll-mt-24 space-y-4 p-5">
       <div>
         <h2 className="font-semibold">Email reminders</h2>
         <p className="mt-0.5 text-xs text-muted">

@@ -40,6 +40,7 @@ export default async function SchedulePage() {
         </div>
       </div>
 
+      <div id="calendar" className="scroll-mt-20">
       <RevisionCalendar
         today={cal.today}
         from={cal.from}
@@ -52,8 +53,9 @@ export default async function SchedulePage() {
         schedule={user.schedule}
         groupColors={groupColors}
       />
+      </div>
 
-      <section className="card p-5">
+      <section id="rotation" className="card scroll-mt-20 p-5">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
           <h2 className="font-semibold">Weekly topic rotation</h2>
           <p className="text-xs text-muted">New questions come from that day&apos;s patterns · solved / total</p>

@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { Types } from "mongoose";
 import { connectDB } from "./db";
 import { Plan, Progress, TopicDone, type PlanDoc, type ProgressDoc, type Revision } from "./models";
@@ -187,7 +188,8 @@ function trackTotals(cat: Catalog, user: AppUser, done: { kind: string; topicId:
     .filter((t) => t.on || t.done > 0);
 }
 
-export async function getDashboard(user: AppUser) {
+// Cached per request: the page and the sidebar both read it.
+export const getDashboard = cache(async (user: AppUser) => {
   const today = todayIn(user.timezone);
   const [plan, cat] = await Promise.all([getOrCreatePlan(user, today), getCatalog()]);
   const userId = oid(user.id);
@@ -262,7 +264,7 @@ export async function getDashboard(user: AppUser) {
       tracks: trackTotals(cat, user, topicsDone),
     },
   };
-}
+});
 
 export type CalendarItem = {
   qid: number;

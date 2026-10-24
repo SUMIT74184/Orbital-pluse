@@ -19,7 +19,7 @@ export default async function QuestionsPage({ searchParams }: PageProps<"/questi
           Solve anything ahead of schedule here — it will join your revision cycle from today.
         </p>
       </div>
-      <QuestionsTable questions={questions} groups={cat.groups} today={today} states={states} backlog={backlog} initialStatus={status} />
+      <QuestionsTable key={status} questions={questions} groups={cat.groups} today={today} states={states} backlog={backlog} initialStatus={status} />
     </div>
   );
 }
