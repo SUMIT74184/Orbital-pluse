@@ -2,7 +2,8 @@ import { requireUser } from "@/lib/auth";
 import { getRevisionCalendar } from "@/lib/plan";
 import { getCatalog } from "@/lib/catalog";
 import { weekdayOf } from "@/lib/dates";
-import { WeekRotation, groupColor } from "@/components/WeekRotation";
+import { groupColor } from "@/components/WeekRotation";
+import { LiveWeekRotation } from "@/components/WeekRotationEditor";
 import { RevisionCalendar } from "@/components/RevisionCalendar";
 
 export const metadata = { title: "Revision plan" };
@@ -15,8 +16,6 @@ export default async function SchedulePage() {
   return (
     <div className="space-y-6">
       <div className="relative overflow-hidden rounded-2xl border border-line bg-panel px-5 py-6 sm:px-7">
-        <div className="hero-grid pointer-events-none absolute inset-0" />
-        <div className="pointer-events-none absolute -right-16 -top-24 size-72 rounded-full bg-rev/15 blur-3xl" />
         <div className="relative flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-rev">Spaced repetition</p>
@@ -61,7 +60,7 @@ export default async function SchedulePage() {
           <p className="text-xs text-muted">New questions come from that day&apos;s patterns · solved / total</p>
         </div>
         <div className="mt-4">
-          <WeekRotation schedule={user.schedule} today={weekdayOf(cal.today)} solvedByGroup={cal.solvedByGroup} meta={meta} />
+          <LiveWeekRotation schedule={user.schedule} today={weekdayOf(cal.today)} solvedByGroup={cal.solvedByGroup} meta={meta} />
         </div>
       </section>
     </div>

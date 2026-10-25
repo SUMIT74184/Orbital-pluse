@@ -19,20 +19,10 @@ export function OrbitHero() {
     <svg viewBox="0 0 400 400" className="w-full max-w-md" aria-hidden>
       <defs>
         <radialGradient id="core-glow">
-          <stop offset="0%" stopColor="#22e584" stopOpacity="0.55" />
-          <stop offset="100%" stopColor="#22e584" stopOpacity="0" />
+          <stop offset="0%" stopColor="#ff6a3d" stopOpacity="0.55" />
+          <stop offset="100%" stopColor="#ff6a3d" stopOpacity="0" />
         </radialGradient>
       </defs>
-      {Array.from({ length: 34 }, (_, i) => (
-        <circle
-          key={i}
-          cx={rand(i) * 400}
-          cy={rand(i + 100) * 400}
-          r={rand(i + 200) * 1.3 + 0.4}
-          className="twinkle fill-ink"
-          style={{ animationDelay: `${(rand(i + 300) * 4).toFixed(2)}s` }}
-        />
-      ))}
       <circle cx="200" cy="200" r="120" fill="url(#core-glow)" />
       {orbits.map((o) => (
         <g key={o.label} transform={`translate(200 200) rotate(${o.tilt})`}>
@@ -51,7 +41,7 @@ export function OrbitHero() {
       ))}
       <circle cx="200" cy="200" r="34" className="core-ring fill-none stroke-pulse" strokeWidth="2" />
       <circle cx="200" cy="200" r="34" className="core-ring fill-none stroke-pulse" strokeWidth="2" style={{ animationDelay: "1.4s" }} />
-      <circle cx="200" cy="200" r="34" className="fill-pulse" style={{ filter: "drop-shadow(0 0 18px rgb(34 229 132 / 0.8))" }} />
+      <circle cx="200" cy="200" r="34" className="fill-pulse" style={{ filter: "drop-shadow(0 0 18px rgb(255 106 61 / 0.8))" }} />
       <path d="M200 182v36M182 200h36" className="stroke-bg" strokeWidth="8" strokeLinecap="round" />
     </svg>
   );
@@ -78,7 +68,7 @@ export function TodayCard() {
     `@keyframes bar{0%,${at(0)}%{width:0}${TODAY.map((_, i) => `${at(i) + 3}%{width:${(((i + 1) / TODAY.length) * 100).toFixed(1)}%}`).join("")}88%{width:100%}94%,100%{width:0}}` +
     `@keyframes done{0%,${done}%{opacity:0;transform:translateY(6px) scale(.95)}${done + 3}%,88%{opacity:1;transform:none}94%,100%{opacity:0}}`;
   return (
-    <div className="card relative overflow-hidden p-5 shadow-[0_30px_80px_-40px_rgb(34_229_132/0.45)]">
+    <div className="card relative overflow-hidden p-5 shadow-[0_30px_80px_-40px_rgb(255_106_61/0.45)]">
       <style>{css}</style>
       <div className="flex items-center justify-between">
         <div>
@@ -90,7 +80,7 @@ export function TodayCard() {
         </span>
       </div>
       <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-panel-2">
-        <div className="today-anim h-full rounded-full bg-pulse shadow-[0_0_12px_rgb(34_229_132/0.8)]" style={{ animationName: "bar" }} />
+        <div className="today-anim h-full rounded-full bg-pulse shadow-[0_0_12px_rgb(255_106_61/0.8)]" style={{ animationName: "bar" }} />
       </div>
       <ul className="mt-4 space-y-2">
         {TODAY.map((t, i) => (
@@ -107,7 +97,7 @@ export function TodayCard() {
         ))}
       </ul>
       <div className="today-anim pointer-events-none absolute inset-x-0 bottom-4 flex justify-center" style={{ animationName: "done" }}>
-        <span className="rounded-full bg-pulse px-4 py-2 text-sm font-semibold text-black shadow-[0_0_30px_rgb(34_229_132/0.7)]">
+        <span className="rounded-full bg-pulse px-4 py-2 text-sm font-semibold text-black shadow-[0_0_30px_rgb(255_106_61/0.7)]">
           Day complete · streak 24 🔥
         </span>
       </div>
@@ -130,7 +120,8 @@ export function StreakGrid() {
   const levels = ["bg-panel-2", "bg-pulse/25", "bg-pulse/45", "bg-pulse/70", "bg-pulse"];
   return (
     <div>
-      <div className="grid grid-flow-col grid-rows-7 gap-[3px] sm:gap-1">
+      {/* Explicit fractional columns: with implicit auto columns the square cells sized themselves off row height and overflowed the card. */}
+      <div className="grid grid-flow-col gap-[3px] sm:gap-1" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`, gridTemplateRows: "repeat(7, auto)" }}>
         {Array.from({ length: cols * 7 }, (_, i) => {
           const col = Math.floor(i / 7);
           const row = i % 7;
@@ -233,7 +224,7 @@ export function RevisionCurve({ days }: { days: number[] }) {
         className="draw-line on-reveal stroke-pulse"
         strokeWidth="2.5"
         strokeLinejoin="round"
-        style={{ animationDuration: `${drawSec}s`, filter: "drop-shadow(0 0 6px rgb(34 229 132 / 0.6))" }}
+        style={{ animationDuration: `${drawSec}s`, filter: "drop-shadow(0 0 6px rgb(255 106 61 / 0.6))" }}
       />
       {days.map((d) => (
         <g key={d}>
@@ -260,11 +251,68 @@ export function Ticker({ items }: { items: { label: string; value: string }[] })
     </div>
   );
   return (
-    <div className="marquee-mask relative overflow-hidden border-y border-line bg-panel/60 py-3">
+    <div className="marquee-mask relative overflow-hidden border-y border-line bg-panel py-3">
       <div className="marquee flex w-max">
         {row()}
         {row(true)}
       </div>
+    </div>
+  );
+}
+
+/** "Zero decision fatigue": the question you'd ask yourself, answered before you ask it. */
+export function PerkPlan() {
+  return (
+    <div className="space-y-1.5 font-mono text-[11px]">
+      <p className="text-muted line-through decoration-hard/70">what should I solve today?</p>
+      <div className="flex items-center gap-2 rounded-md border border-line bg-panel-2/60 px-2 py-1.5">
+        <span className="text-new">NEW</span>
+        <span className="truncate text-ink/90">Merge Intervals</span>
+        <span className="ml-auto text-medium">M</span>
+      </div>
+      <div className="flex items-center gap-2 rounded-md border border-line bg-panel-2/60 px-2 py-1.5">
+        <span className="text-rev">REV</span>
+        <span className="truncate text-ink/90">Valid Parentheses</span>
+        <span className="ml-auto text-muted">D4</span>
+      </div>
+    </div>
+  );
+}
+
+/** "Gentle nudges": what the reminder email actually looks like in an inbox. */
+export function PerkNudge() {
+  return (
+    <div className="rounded-md border border-line bg-panel-2/60 px-3 py-2.5 text-[11px]">
+      <div className="flex items-center justify-between font-mono text-muted">
+        <span className="flex items-center gap-1.5">
+          <span className="size-1.5 rounded-full bg-pulse" /> Orbit-Plus
+        </span>
+        <span>07:30</span>
+      </div>
+      <p className="mt-1.5 font-medium text-ink">3 questions + 2 revisions today</p>
+      <p className="mt-0.5 truncate text-muted">Sliding Window day. Your 23-day streak is waiting…</p>
+    </div>
+  );
+}
+
+/** "Progress you can see": per-pattern bars, like the dashboard's breakdown. */
+export function PerkProgress() {
+  const rows = [
+    { name: "Arrays", pct: 82, cls: "bg-easy" },
+    { name: "Graphs", pct: 46, cls: "bg-medium" },
+    { name: "DP", pct: 21, cls: "bg-hard" },
+  ];
+  return (
+    <div className="space-y-2 font-mono text-[11px]">
+      {rows.map((r) => (
+        <div key={r.name} className="flex items-center gap-2">
+          <span className="w-12 shrink-0 text-muted">{r.name}</span>
+          <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-panel-2">
+            <span className={`block h-full rounded-full ${r.cls}`} style={{ width: `${r.pct}%` }} />
+          </span>
+          <span className="w-8 text-right text-ink/80">{r.pct}%</span>
+        </div>
+      ))}
     </div>
   );
 }

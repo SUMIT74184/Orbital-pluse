@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
   <rect width="64" height="64" rx="16" fill="#0a0e13"/>
-  <ellipse cx="32" cy="32" rx="25" ry="11" fill="none" stroke="#22e584" stroke-width="3.5" transform="rotate(-28 32 32)"/>
-  <circle cx="32" cy="32" r="10" fill="#22e584"/>
+  <ellipse cx="32" cy="32" rx="25" ry="11" fill="none" stroke="#ff6a3d" stroke-width="3.5" transform="rotate(-28 32 32)"/>
+  <circle cx="32" cy="32" r="10" fill="#ff6a3d"/>
   <path d="M32 26.5v11M26.5 32h11" stroke="#0a0e13" stroke-width="3.2" stroke-linecap="round"/>
   <circle cx="53" cy="20" r="3.6" fill="#4c9aff"/>
 </svg>

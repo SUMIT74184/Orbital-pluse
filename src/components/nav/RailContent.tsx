@@ -4,6 +4,7 @@ import { getDashboard } from "@/lib/plan";
 import { getCatalog } from "@/lib/catalog";
 import { diffDays, formatDate } from "@/lib/dates";
 import { dailyInterviewQA } from "@/data/interview";
+import { topicHref } from "@/data/topics";
 import { Icon, type IconName } from "./Icons";
 
 const DIFF_COLOR = { Easy: "var(--color-easy)", Medium: "var(--color-medium)", Hard: "var(--color-hard)" } as const;
@@ -140,7 +141,7 @@ export async function RailContent({ user }: { user: AppUser }) {
             </summary>
             <p className="mt-2 text-xs leading-relaxed text-muted">{tip.preview}</p>
           </details>
-          <Link href={`/tracks#${tip.track}`} className="mt-2 inline-block text-xs text-muted hover:text-ink">
+          <Link href={tip.topicId ? topicHref(tip.track, tip.topicId) : `/tracks/${tip.track}`} className="mt-2 inline-block text-xs text-muted hover:text-ink">
             {tip.topic} →
           </Link>
         </Section>

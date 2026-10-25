@@ -28,7 +28,7 @@ export default async function ProfilePage() {
       <section className="card relative overflow-hidden p-6">
         <div
           className="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full opacity-40 blur-3xl"
-          style={{ background: "radial-gradient(circle, rgb(34 229 132 / 0.35), transparent 70%)" }}
+          style={{ background: "radial-gradient(circle, rgb(255 106 61 / 0.35), transparent 70%)" }}
         />
         <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center">
           <Avatar name={user.name} seed={user.id} size={76} />

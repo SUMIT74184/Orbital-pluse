@@ -7,6 +7,7 @@ import { requireAdmin } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
 import { QuestionModel, Track, TrackTopic } from "@/lib/models";
 import { invalidateCatalog } from "@/lib/catalog";
+import { LEVELS } from "@/data/topics";
 
 export type AdminState = { ok?: string; error?: string } | undefined;
 
@@ -153,6 +154,7 @@ const topicSchema = z.object({
       }),
     )
     .pipe(z.array(z.object({ title: z.string().max(120), url })).max(8, "At most 8 practice links")),
+  levels: z.array(z.enum(LEVELS)),
 });
 
 export async function saveTopic(_: AdminState, formData: FormData): Promise<AdminState> {
@@ -164,6 +166,7 @@ export async function saveTopic(_: AdminState, formData: FormData): Promise<Admi
     title: formData.get("title"),
     points: formData.get("points") ?? "",
     practice: formData.get("practice") ?? "",
+    levels: formData.getAll("levels"),
   });
   if (!parsed.success) return { error: parsed.error.issues[0].message };
   const { track, topicId, ...fields } = parsed.data;

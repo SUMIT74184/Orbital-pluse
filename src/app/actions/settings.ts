@@ -8,6 +8,7 @@ import { User } from "@/lib/models";
 import { resetTodayPlanIfUntouched } from "@/lib/plan";
 import { scheduleFor } from "@/lib/reminders";
 import { getCatalog } from "@/lib/catalog";
+import { moveTopic } from "@/data/catalog";
 
 export type SettingsState = { ok?: boolean; error?: string } | undefined;
 
@@ -62,4 +63,22 @@ export async function saveSettings(_: SettingsState, formData: FormData): Promis
   await resetTodayPlanIfUntouched({ ...user, ...parsed.data });
   revalidatePath("/", "layout");
   return { ok: true };
+}
+
+/** Drag-and-drop on the weekly rotation: moves one topic to another weekday and saves right away. */
+export async function moveScheduleTopic(group: string, from: number, to: number): Promise<{ error?: string }> {
+  const user = await requireUser();
+  const day = z.number().int().min(0).max(6);
+  if (!day.safeParse(from).success || !day.safeParse(to).success) return { error: "Unknown day" };
+  const cat = await getCatalog();
+  if (!cat.groups.includes(group)) return { error: "Unknown topic" };
+
+  const schedule = moveTopic(user.schedule, group, from, to, cat.groups);
+  if (schedule === user.schedule) return {};
+  await connectDB();
+  await User.updateOne({ _id: user.id }, { $set: { schedule } });
+  // Today's new questions come from today's topics, so rebuild the plan if it hasn't been started.
+  await resetTodayPlanIfUntouched({ ...user, schedule });
+  revalidatePath("/", "layout");
+  return {};
 }

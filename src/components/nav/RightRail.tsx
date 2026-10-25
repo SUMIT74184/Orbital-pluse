@@ -23,7 +23,7 @@ export function RightRail({ initialCollapsed, children }: { initialCollapsed: bo
 
   return (
     <aside
-      className={`sticky top-0 hidden h-screen shrink-0 flex-col border-l border-line bg-panel/80 backdrop-blur transition-[width] duration-200 xl:flex ${
+      className={`sticky top-0 hidden h-screen shrink-0 flex-col border-l border-line bg-panel transition-[width] duration-200 xl:flex ${
         collapsed ? "w-14" : "w-72"
       }`}
       aria-label="At a glance"

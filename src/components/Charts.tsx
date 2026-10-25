@@ -37,7 +37,7 @@ export function TodayProgress({
       >
         <div
           className="h-full rounded-full bg-gradient-to-r from-new via-rev to-pulse transition-[width] duration-700"
-          style={{ width: `${percent}%`, boxShadow: complete ? "0 0 14px rgb(34 229 132 / 0.6)" : undefined }}
+          style={{ width: `${percent}%`, boxShadow: complete ? "0 0 14px rgb(255 106 61 / 0.6)" : undefined }}
         />
       </div>
       <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -200,7 +200,7 @@ export function PatternRadar({ groups }: { groups: { group: string; solved: numb
           </text>
         ))}
         <g className="radar-shape">
-          <polygon points={shape} fill="var(--color-pulse)" fillOpacity="0.18" stroke="var(--color-pulse)" strokeWidth="2" strokeLinejoin="round" style={{ filter: "drop-shadow(0 0 8px rgb(34 229 132 / 0.45))" }} />
+          <polygon points={shape} fill="var(--color-pulse)" fillOpacity="0.18" stroke="var(--color-pulse)" strokeWidth="2" strokeLinejoin="round" style={{ filter: "drop-shadow(0 0 8px rgb(255 106 61 / 0.45))" }} />
           {pts.map((p) => (
             <circle key={p.group} cx={p.xy[0]} cy={p.xy[1]} r="3.5" fill={p.pct === 1 ? "var(--color-pulse)" : "var(--color-new)"} stroke="var(--color-panel)" strokeWidth="1.5">
               <title>{`${p.group}: ${p.solved}/${p.total} (${Math.round(p.pct * 100)}%)`}</title>

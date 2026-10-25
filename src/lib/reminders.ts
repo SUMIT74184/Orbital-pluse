@@ -71,7 +71,7 @@ async function layout(user: AppUser, intro: string, body: { html: string; text: 
     <div style="font-size:13px;font-weight:700;color:#0f9d74;letter-spacing:.04em">ORBIT-PLUS</div>
     <p style="font-size:15px;color:#111827;line-height:1.5;margin:12px 0 0">${intro}</p>
     ${body.map((b) => b.html).join("")}
-    <p style="margin:28px 0 8px"><a href="${dashboard}" style="display:inline-block;background:#22e584;color:#000;font-weight:700;font-size:14px;padding:10px 18px;border-radius:8px;text-decoration:none">Open dashboard</a></p>
+    <p style="margin:28px 0 8px"><a href="${dashboard}" style="display:inline-block;background:#ff6a3d;color:#000;font-weight:700;font-size:14px;padding:10px 18px;border-radius:8px;text-decoration:none">Open dashboard</a></p>
     <p style="font-size:11px;color:#9ca3af;margin-top:24px">You get this because reminders are on in your Orbit-Plus profile.
       <a href="${appUrl("/profile")}" style="color:#9ca3af">Change time</a> · <a href="${unsub}" style="color:#9ca3af">Unsubscribe</a></p>
   </td></tr></table></td></tr></table></body></html>`;

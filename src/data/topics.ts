@@ -1,18 +1,49 @@
+/** Seniority a topic gets asked at. A topic with no levels is relevant to everyone. */
+export const LEVELS = ["entry", "mid", "senior"] as const;
+export type Level = (typeof LEVELS)[number];
+export const LEVEL_LABEL: Record<Level, string> = { entry: "Entry level", mid: "Mid level", senior: "Senior" };
+
+export function parseLevel(v: unknown): Level | null {
+  return typeof v === "string" && (LEVELS as readonly string[]).includes(v) ? (v as Level) : null;
+}
+
+/** Whether a topic is shown for a role filter. Topics without levels show for every role. */
+export const forLevel = (role: Level | null) => (t: { levels?: Level[] }) => !role || !t.levels?.length || t.levels.includes(role);
+
 export type Topic = {
   id: number;
   title: string;
   section: string;
   points: string[];
   practice?: { title: string; url: string }[];
+  levels?: Level[];
 };
 
 // Track key, e.g. "sd", "sql", or any key an admin creates.
 export type TrackKind = string;
 
+/** Tracks you practise by solving (listed under Questions) rather than read as lessons under Tracks. */
+export const PRACTICE_TRACKS: readonly string[] = ["sql"];
+
+export function topicHref(track: string, id: number) {
+  return PRACTICE_TRACKS.includes(track) ? `/questions?tab=${track}#topic-${id}` : `/tracks/${track}/${id}`;
+}
+
 const lc = (slug: string, title: string) => ({ title, url: `https://leetcode.com/problems/${slug}/` });
 // DataLemur: real company SQL interview questions, plus its free SQL tutorial lessons.
 const dl = (slug: string, title: string, company: string) => ({ title: `${title} (${company})`, url: `https://datalemur.com/questions/${slug}` });
 const lesson = (slug: string, title: string) => ({ title: `Lesson: ${title}`, url: `https://datalemur.com/sql-tutorial/${slug}` });
+// Reading for the OOP track: GeeksforGeeks, TpointTech (formerly javatpoint) and Refactoring.Guru.
+const gfg = (path: string, title: string) => ({ title: `GfG: ${title}`, url: `https://www.geeksforgeeks.org/${path}/` });
+const tpt = (slug: string, title: string) => ({ title: `TpointTech: ${title}`, url: `https://www.tpointtech.com/${slug}` });
+const rg = (slug: string, title: string) => ({ title: `Refactoring.Guru: ${title}`, url: `https://refactoring.guru/${slug}` });
+const LLD_REPO = { title: "awesome-low-level-design (GitHub)", url: "https://github.com/ashishps1/awesome-low-level-design" };
+const E: Level[] = ["entry"];
+const EM: Level[] = ["entry", "mid"];
+const EMS: Level[] = ["entry", "mid", "senior"];
+const M: Level[] = ["mid"];
+const MS: Level[] = ["mid", "senior"];
+const S: Level[] = ["senior"];
 
 // One topic per day, in order: fundamentals first, then building blocks, then case studies.
 const SYSTEM_DESIGN: Omit<Topic, "id">[] = [
@@ -161,9 +192,50 @@ const DBMS_TRACK: Omit<Topic, "id">[] = [
   { section: "Interview", title: "DBMS rapid-fire round-up", points: ["DELETE vs TRUNCATE vs DROP", "WHERE vs HAVING, UNION vs UNION ALL", "CHAR vs VARCHAR, clustered vs non-clustered index", "Views vs materialized views, triggers vs procedures"] },
 ];
 
+// Theory first, then relationships and principles, then patterns and LLD; `levels` drives the role filter on /tracks.
+const OOP_TRACK: Omit<Topic, "id">[] = [
+  { section: "Foundations", levels: E, title: "What OOP is & why it exists", points: ["Procedural vs object-oriented thinking", "Objects bundle state and behaviour", "Pure vs hybrid OO languages", "Advantages & limitations of OOP"], practice: [gfg("introduction-of-object-oriented-programming", "Introduction to OOP"), tpt("java-oops-concepts", "Java OOPs concepts")] },
+  { section: "Foundations", levels: E, title: "Classes, objects & memory", points: ["Class as blueprint, object as instance", "Reference vs object, stack vs heap", "Ways to create an object in Java", "Instance vs class (static) members"], practice: [gfg("java/classes-objects-java", "Classes and objects"), tpt("object-and-class-in-java", "Object and class")] },
+  { section: "Foundations", levels: E, title: "Constructors & object lifecycle", points: ["Default, parameterised & copy constructors", "Constructor chaining with this() and super()", "Private constructors", "Garbage collection vs destructors"], practice: [gfg("java/constructors-in-java", "Constructors"), tpt("java-constructor", "Java constructor")] },
+  { section: "Foundations", levels: EM, title: "Access modifiers, static & final", points: ["private, default, protected, public", "Static variables, methods & blocks", "final variable, method & class", "this vs super"], practice: [gfg("java/access-modifiers-java", "Access modifiers"), gfg("java/static-keyword-java", "static keyword"), tpt("static-keyword-in-java", "static keyword")] },
+  { section: "Four pillars", levels: EM, title: "Encapsulation", points: ["Data hiding with private fields", "Getters / setters and invariants", "Encapsulation vs abstraction", "Tell, don't ask"], practice: [gfg("java/encapsulation-in-java", "Encapsulation"), tpt("encapsulation", "Encapsulation")] },
+  { section: "Four pillars", levels: EM, title: "Abstraction: abstract classes & interfaces", points: ["Hiding the how, exposing the what", "Abstract methods & abstract classes", "Interfaces as contracts", "Real-world examples (JDBC, Collections)"], practice: [gfg("java/abstraction-in-java-2", "Abstraction"), tpt("abstract-class-in-java", "Abstract class")] },
+  { section: "Four pillars", levels: EM, title: "Inheritance & its types", points: ["IS-A relationship & code reuse", "Single, multilevel, hierarchical, multiple, hybrid", "Diamond problem & why Java bans multiple class inheritance", "Constructor call order"], practice: [gfg("java/inheritance-in-java", "Inheritance"), tpt("inheritance-in-java", "Inheritance")] },
+  { section: "Four pillars", levels: EM, title: "Polymorphism: overloading vs overriding", points: ["Compile-time vs runtime polymorphism", "Overloading rules (signature, not return type)", "Overriding rules (access, exceptions, @Override)", "Upcasting & downcasting"], practice: [gfg("java/polymorphism-in-java", "Polymorphism"), gfg("java/method-overloading-in-java", "Overloading"), gfg("java/overriding-in-java", "Overriding"), tpt("runtime-polymorphism-in-java", "Runtime polymorphism")] },
+  { section: "Four pillars", levels: M, title: "Dynamic dispatch & binding", points: ["Static vs dynamic binding", "How a vtable resolves a call", "Why static, private & final methods aren't overridden", "Covariant return types & method hiding"], practice: [tpt("method-overriding-in-java", "Method overriding")] },
+  { section: "Going deeper", levels: EMS, title: "Abstract class vs interface", points: ["State, constructors & access in each", "Default, static & private interface methods (Java 8/9)", "Multiple inheritance of type", "Choosing one in a design"], practice: [gfg("java/difference-between-abstract-class-and-interface-in-java", "Abstract class vs interface"), tpt("interface-in-java", "Interface")] },
+  { section: "Going deeper", levels: M, title: "Object contracts: equals, hashCode & toString", points: ["== vs equals()", "The equals / hashCode contract", "What breaks in a HashMap when it's violated", "Comparable vs Comparator"], practice: [gfg("java/equals-hashcode-methods-java", "equals() and hashCode()")] },
+  { section: "Going deeper", levels: MS, title: "Immutability & value objects", points: ["Rules for an immutable class", "Defensive copies", "Why String is immutable", "Value objects vs entities"], practice: [gfg("java/create-immutable-class-java", "Immutable class"), tpt("how-to-create-immutable-class", "Immutable class")] },
+  { section: "Going deeper", levels: M, title: "Exceptions in OO design", points: ["Checked vs unchecked", "Custom exception hierarchies", "Exceptions and overriding", "try-with-resources & AutoCloseable"], practice: [gfg("java/exceptions-in-java", "Exceptions"), tpt("exception-handling-in-java", "Exception handling")] },
+  { section: "Going deeper", levels: M, title: "Generics & type safety", points: ["Why generics (compile-time safety)", "Bounded types & wildcards (PECS)", "Type erasure", "Generic methods"], practice: [gfg("java/generics-in-java", "Generics")] },
+  { section: "Relationships & UML", levels: EM, title: "Association, aggregation & composition", points: ["HAS-A vs IS-A", "Aggregation: independent lifecycle", "Composition: owned lifecycle", "Dependency (uses-a)"], practice: [gfg("java/association-composition-aggregation-java", "Association, composition, aggregation"), tpt("aggregation-in-java", "Aggregation")] },
+  { section: "Relationships & UML", levels: MS, title: "Composition over inheritance", points: ["Fragile base class problem", "Delegation", "When inheritance is still right", "Mixing behaviour at runtime"], practice: [gfg("java/favoring-composition-over-inheritance-in-java-with-examples", "Composition over inheritance")] },
+  { section: "Relationships & UML", levels: MS, title: "UML class diagrams", points: ["Class box: name, fields, methods, visibility", "Arrows: inheritance, realisation, association, aggregation, composition, dependency", "Multiplicity", "Sketching UML on a whiteboard fast"], practice: [gfg("system-design/unified-modeling-language-uml-class-diagrams", "UML class diagrams")] },
+  { section: "Design principles", levels: MS, title: "SOLID: SRP & OCP", points: ["Single responsibility: one reason to change", "Open/closed: extend without modifying", "Spotting violations", "Refactoring a switch into polymorphism"], practice: [gfg("system-design/solid-principle-in-programming-understand-with-real-life-examples", "SOLID principles")] },
+  { section: "Design principles", levels: MS, title: "SOLID: LSP, ISP & DIP", points: ["Liskov: subtypes must be substitutable (Square/Rectangle)", "Interface segregation: small, focused interfaces", "Dependency inversion: depend on abstractions", "DIP vs dependency injection"], practice: [gfg("system-design/solid-principle-in-programming-understand-with-real-life-examples", "SOLID principles")] },
+  { section: "Design principles", levels: MS, title: "Coupling, cohesion, DRY, KISS & YAGNI", points: ["Low coupling, high cohesion", "Law of Demeter", "DRY vs premature abstraction", "KISS & YAGNI in interviews"], practice: [rg("refactoring/smells", "Code smells")] },
+  { section: "Design principles", levels: S, title: "Dependency injection & testability", points: ["Constructor vs setter vs field injection", "IoC containers (Spring)", "Mocks and seams for unit tests", "Service locator anti-pattern"], practice: [gfg("system-design/dependency-injection-di-design-pattern", "Dependency injection")] },
+  { section: "Design patterns", levels: MS, title: "Creational: Singleton, Factory & Builder", points: ["Thread-safe singleton (holder, enum, double-checked)", "Simple factory vs factory method vs abstract factory", "Builder for many optional params", "Why singletons hurt testability"], practice: [gfg("system-design/singleton-design-pattern", "Singleton"), gfg("system-design/factory-method-for-designing-pattern", "Factory method"), gfg("system-design/builder-design-pattern", "Builder"), rg("design-patterns/singleton", "Singleton")] },
+  { section: "Design patterns", levels: MS, title: "Structural: Adapter, Decorator, Facade & Proxy", points: ["Adapter: convert one interface to another", "Decorator: add behaviour by wrapping (Java I/O)", "Facade: one simple entry point", "Proxy: control access (lazy, remote, caching)"], practice: [gfg("system-design/adapter-pattern", "Adapter"), gfg("system-design/decorator-pattern", "Decorator"), rg("design-patterns/decorator", "Decorator")] },
+  { section: "Design patterns", levels: MS, title: "Behavioural: Strategy, Observer, State & Command", points: ["Strategy: swap algorithms at runtime", "Observer: publish / subscribe", "State: behaviour changes with state", "Command: requests as objects (undo)"], practice: [gfg("system-design/strategy-pattern-set-1", "Strategy"), gfg("system-design/observer-pattern-set-1-introduction", "Observer"), gfg("system-design/state-design-pattern", "State"), rg("design-patterns/command", "Command")] },
+  { section: "Design patterns", levels: S, title: "Choosing patterns & anti-patterns", points: ["Start from the problem, not the pattern", "Over-engineering signals", "God object, anaemic model, singleton abuse", "Patterns you can see in the JDK"], practice: [gfg("system-design/design-patterns-cheat-sheet-when-to-use-which-design-pattern", "Patterns cheat sheet"), rg("design-patterns/catalog", "Pattern catalog"), tpt("design-patterns-in-java", "Design patterns in Java")] },
+  { section: "Low-level design", levels: MS, title: "How to approach an LLD interview", points: ["Clarify requirements & scope", "Find nouns (classes) and verbs (methods)", "Class diagram → key flows → code", "Extensibility & edge cases"], practice: [gfg("system-design/what-is-low-level-design-or-lld-learn-system-design", "What is LLD"), LLD_REPO] },
+  { section: "Low-level design", levels: EMS, title: "LLD: Parking lot", points: ["Spots, vehicles, levels, tickets", "Spot allocation strategy", "Pricing strategy", "Concurrency at the entry gate"], practice: [gfg("system-design/design-parking-lot-using-object-oriented-principles", "Parking lot"), LLD_REPO] },
+  { section: "Low-level design", levels: MS, title: "LLD: Elevator system", points: ["Elevator, request, controller, display", "Elevator states (State pattern)", "Scheduling (SCAN / LOOK)", "Multiple elevators dispatch"], practice: [LLD_REPO] },
+  { section: "Low-level design", levels: MS, title: "LLD: Movie ticket booking (BookMyShow)", points: ["Movie, show, screen, seat, booking", "Seat locking with timeouts", "Payment & booking states", "Avoiding double booking"], practice: [gfg("system-design/design-bookmyshow-a-system-design-interview-question", "BookMyShow"), LLD_REPO] },
+  { section: "Low-level design", levels: MS, title: "LLD: Splitwise (expense sharing)", points: ["User, group, expense, split", "Equal, exact & percent splits (Strategy)", "Balance sheet", "Simplifying debts"], practice: [LLD_REPO] },
+  { section: "Low-level design", levels: S, title: "LLD: LRU cache & rate limiter", points: ["HashMap + doubly linked list", "Generic, thread-safe cache", "Token bucket vs sliding window", "Pluggable eviction / limiting strategies"], practice: [lc("lru-cache", "LRU Cache"), LLD_REPO] },
+  { section: "Low-level design", levels: MS, title: "Machine coding round", points: ["90 minutes, working code", "Package structure & layering", "In-memory repositories", "What evaluators score"], practice: [gfg("system-design/design-snake-game", "Snake game"), gfg("system-design/design-a-chess-game", "Chess game"), LLD_REPO] },
+  { section: "Senior depth", levels: S, title: "Concurrency in OO design", points: ["Thread-safe classes & shared mutable state", "synchronized, locks, atomics", "Immutability & confinement", "Deadlock in object graphs"], practice: [gfg("java/multithreading-in-java", "Multithreading"), gfg("java/deadlock-in-java-multithreading", "Deadlock"), tpt("multithreading-in-java", "Multithreading")] },
+  { section: "Senior depth", levels: S, title: "Code review & refactoring smells", points: ["Long method, large class, feature envy", "Switch on type, primitive obsession", "Refactor step by step under tests", "Explaining trade-offs in review"], practice: [rg("refactoring/smells", "Code smells")] },
+  { section: "Senior depth", levels: S, title: "Designing for extensibility", points: ["Plugin points & extension interfaces", "Events vs direct calls", "Versioning public APIs", "When OOP isn't the right tool"] },
+  { section: "Interview", levels: EM, title: "OOP rapid-fire round-up", points: ["Class vs struct, object vs instance", "Can we override static / private methods?", "Can a constructor be final / static?", "Shallow vs deep copy"], practice: [gfg("oops-interview-questions", "OOPs interview questions"), tpt("oops-interview-questions", "OOPs interview questions"), tpt("corejava-interview-questions", "Core Java interview questions")] },
+];
+
 // Seed for the tracks collection. At runtime tracks come from the database (src/lib/catalog.ts).
 export const SEED_TRACKS: { key: string; name: string; description: string; topics: Topic[] }[] = [
   { key: "sd", name: "System Design", description: "Fundamentals, building blocks, then classic case studies.", topics: SYSTEM_DESIGN.map((t, i) => ({ ...t, id: i + 1 })) },
   { key: "sql", name: "MySQL", description: "Queries with DataLemur interview practice, then schema design and InnoDB internals.", topics: SQL_TRACK.map((t, i) => ({ ...t, id: i + 1 })) },
   { key: "dbms", name: "DBMS", description: "Core DBMS theory: ER model, normalization, transactions, concurrency, recovery and indexing.", topics: DBMS_TRACK.map((t, i) => ({ ...t, id: i + 1 })) },
+  { key: "oop", name: "OOP & LLD", description: "OOP theory, SOLID and design patterns, then low-level design problems — tagged by the role level they're asked at.", topics: OOP_TRACK.map((t, i) => ({ ...t, id: i + 1 })) },
 ];

@@ -1,4 +1,4 @@
-const COLORS = ["#4c9aff", "#2dd4a0", "#b18cff", "#ffb547", "#ff7eb6", "#22e584", "#5eead4"];
+const COLORS = ["#4c9aff", "#fb923c", "#b18cff", "#ffb547", "#ff7eb6", "#ff6a3d", "#f43f5e"];
 
 export function initials(name: string) {
   const parts = name.trim().split(/\s+/);

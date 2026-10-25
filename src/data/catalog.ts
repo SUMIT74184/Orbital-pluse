@@ -30,5 +30,20 @@ export const DEFAULT_SCHEDULE: string[][] = [
   ["Graphs"],
 ];
 
+/**
+ * Moves `group` from one weekday to another. If the target already has it the two just merge.
+ * `order` (the sheet's group order) keeps each day's list sorted the same way everywhere.
+ */
+export function moveTopic(schedule: string[][], group: string, from: number, to: number, order: string[]): string[][] {
+  if (from === to || !schedule[from]?.includes(group)) return schedule;
+  return schedule.map((groups, d) =>
+    d === from
+      ? groups.filter((g) => g !== group)
+      : d === to
+        ? order.filter((g) => g === group || groups.includes(g))
+        : groups,
+  );
+}
+
 export const DEFAULT_REVISION_DAYS = [1, 3, 7, 14, 30, 45, 60];
 export const DEFAULT_DAILY_TARGET = 3;

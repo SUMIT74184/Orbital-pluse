@@ -7,7 +7,7 @@ import { getCatalog } from "@/lib/catalog";
 import { getUser } from "@/lib/auth";
 import { WeekRotation } from "@/components/WeekRotation";
 import { Reveal, CountUp } from "@/components/landing/Reveal";
-import { OrbitHero, TodayCard, StreakGrid, MiniMarket, RevisionCurve, Ticker, Flame } from "@/components/landing/Visuals";
+import { OrbitHero, TodayCard, StreakGrid, MiniMarket, RevisionCurve, Ticker, Flame, PerkPlan, PerkNudge, PerkProgress } from "@/components/landing/Visuals";
 
 const WORDS = ["a daily habit", "a streak", "a reflex", "a no-brainer", "a daily habit"];
 
@@ -27,7 +27,7 @@ export default async function Home() {
 
   return (
     <div className="relative flex-1 overflow-x-clip">
-      <header className="sticky top-0 z-30 border-b border-line/60 bg-bg/70 backdrop-blur-md">
+      <header className="sticky top-0 z-30 border-b border-line bg-bg">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
           <Logo />
           <nav className="hidden items-center gap-1 text-sm text-muted md:flex">
@@ -53,9 +53,6 @@ export default async function Home() {
 
       {/* Hero */}
       <section className="relative">
-        <div className="hero-grid pointer-events-none absolute inset-0" aria-hidden />
-        <div className="aurora pointer-events-none absolute -top-40 left-[2%] size-[32rem] rounded-full" style={{ background: "radial-gradient(circle, rgb(34 229 132 / 0.22), transparent 65%)" }} aria-hidden />
-        <div className="aurora pointer-events-none absolute top-20 right-0 size-[30rem] rounded-full" style={{ background: "radial-gradient(circle, rgb(76 154 255 / 0.18), transparent 65%)", animationDelay: "-7s" }} aria-hidden />
 
         <div className="relative mx-auto grid max-w-6xl items-center gap-10 px-4 pt-14 pb-16 sm:px-6 lg:grid-cols-[1.1fr_1fr] lg:pt-20 lg:pb-24">
           <div className="text-center lg:text-left">
@@ -84,10 +81,10 @@ export default async function Home() {
             </Reveal>
             <Reveal delay={240}>
               <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row lg:justify-start">
-                <Link href={primary.href} className="group rounded-xl bg-pulse px-6 py-3.5 font-semibold text-black shadow-[0_0_40px_-8px_rgb(34_229_132/0.8)] transition hover:brightness-110">
+                <Link href={primary.href} className="group rounded-xl bg-pulse px-6 py-3.5 font-semibold text-black shadow-[0_0_40px_-8px_rgb(255_106_61/0.8)] transition hover:brightness-110">
                   {primary.label} <span className="inline-block transition group-hover:translate-x-1">→</span>
                 </Link>
-                <a href="#how" className="rounded-xl border border-line bg-panel/60 px-6 py-3.5 font-medium transition hover:border-muted">
+                <a href="#how" className="rounded-xl border border-line bg-panel px-6 py-3.5 font-medium transition hover:border-muted">
                   See how it works
                 </a>
               </div>
@@ -166,7 +163,6 @@ export default async function Home() {
 
       {/* Habit */}
       <section id="habit" className="relative scroll-mt-20 py-16">
-        <div className="aurora pointer-events-none absolute top-1/4 left-1/4 size-[36rem] rounded-full" style={{ background: "radial-gradient(circle, rgb(34 229 132 / 0.08), transparent 65%)" }} aria-hidden />
         <div className="relative mx-auto max-w-6xl px-4 sm:px-6">
           <Reveal className="mx-auto max-w-2xl text-center">
             <SectionLabel>Don&apos;t break the chain</SectionLabel>
@@ -177,8 +173,8 @@ export default async function Home() {
             </p>
           </Reveal>
           <div className="mt-10 grid gap-4 lg:grid-cols-[1.6fr_1fr]">
-            <Reveal>
-              <div className="card p-5">
+            <Reveal className="h-full">
+              <div className="card flex h-full flex-col justify-between p-5">
                 <div className="mb-4 flex items-center justify-between">
                   <div>
                     <p className="text-sm text-muted">Current streak</p>
@@ -191,6 +187,18 @@ export default async function Home() {
                     <p className="text-sm text-muted">Solved</p>
                     <p className="text-3xl font-semibold tracking-tight text-pulse"><CountUp to={318} /></p>
                   </div>
+                </div>
+                <div className="mb-5 grid grid-cols-3 divide-x divide-line rounded-lg border border-line bg-panel-2/40 font-mono text-xs">
+                  {[
+                    { k: "longest", v: "52 days", c: "text-topic" },
+                    { k: "this week", v: "6 / 7", c: "text-pulse" },
+                    { k: "revisions", v: "204 done", c: "text-rev" },
+                  ].map((s) => (
+                    <div key={s.k} className="px-3 py-2.5">
+                      <p className="text-muted">{s.k}</p>
+                      <p className={`mt-0.5 text-sm ${s.c}`}>{s.v}</p>
+                    </div>
+                  ))}
                 </div>
                 <StreakGrid />
               </div>
@@ -208,18 +216,19 @@ export default async function Home() {
             </div>
           </div>
 
-          <div className="mt-4 grid gap-4 md:grid-cols-3">
+          <div className="card mt-4 grid divide-y divide-line md:grid-cols-3 md:divide-x md:divide-y-0">
             {[
-              { icon: "🎯", t: "Zero decision fatigue", d: "Open the app, see exactly what to do. Your brain saves its energy for the actual problem." },
-              { icon: "📬", t: "Gentle nudges", d: "Opt-in email reminders at the time you choose, so tomorrow-you doesn't forget." },
-              { icon: "📈", t: "Progress you can see", d: "Charts per pattern and difficulty show where you're strong and what to push next." },
+              { n: "01", c: "text-new", t: "Zero decision fatigue", d: "Open the app, see exactly what to do. Your brain saves its energy for the actual problem.", v: <PerkPlan /> },
+              { n: "02", c: "text-rev", t: "Gentle nudges", d: "Opt-in email reminders at the time you choose, so tomorrow-you doesn't forget.", v: <PerkNudge /> },
+              { n: "03", c: "text-topic", t: "Progress you can see", d: "Charts per pattern and difficulty show where you're strong and what to push next.", v: <PerkProgress /> },
             ].map((f, i) => (
-              <Reveal key={f.t} delay={i * 100}>
-                <div className="card lift h-full p-5">
-                  <span className="text-2xl">{f.icon}</span>
-                  <p className="mt-3 font-semibold">{f.t}</p>
-                  <p className="mt-1 text-sm text-muted">{f.d}</p>
-                </div>
+              <Reveal key={f.t} delay={i * 100} className="flex flex-col p-5">
+                <p className="font-semibold">
+                  <span className={`mr-2 font-mono text-xs ${f.c}`}>{f.n}</span>
+                  {f.t}
+                </p>
+                <p className="mt-1 text-sm text-muted">{f.d}</p>
+                <div className="mt-auto pt-5">{f.v}</div>
               </Reveal>
             ))}
           </div>
@@ -269,13 +278,12 @@ export default async function Home() {
         <Reveal>
           <div className="glow-border rounded-3xl">
             <div className="relative overflow-hidden rounded-3xl bg-panel px-6 py-14 text-center sm:px-12">
-              <div className="hero-grid pointer-events-none absolute inset-0 opacity-60" aria-hidden />
               <p className="relative font-mono text-xs uppercase tracking-[0.2em] text-pulse">Day 1 starts today</p>
               <h2 className="relative mx-auto mt-4 max-w-2xl text-3xl font-semibold tracking-tight sm:text-5xl">
                 Future you, with the offer letter, says thanks.
               </h2>
               <p className="relative mx-auto mt-4 max-w-lg text-muted">Free. Takes 30 seconds to sign up. Your first 3 questions are already waiting.</p>
-              <Link href={primary.href} className="relative mt-8 inline-block rounded-xl bg-pulse px-7 py-3.5 font-semibold text-black shadow-[0_0_40px_-6px_rgb(34_229_132/0.9)] transition hover:brightness-110">
+              <Link href={primary.href} className="relative mt-8 inline-block rounded-xl bg-pulse px-7 py-3.5 font-semibold text-black shadow-[0_0_40px_-6px_rgb(255_106_61/0.9)] transition hover:brightness-110">
                 {primary.label} →
               </Link>
               <svg viewBox="0 0 600 80" className="relative mx-auto mt-10 w-full max-w-2xl" aria-hidden>
@@ -286,7 +294,7 @@ export default async function Home() {
                   className="ecg-trace on-reveal stroke-pulse"
                   strokeWidth="2.5"
                   strokeLinejoin="round"
-                  style={{ filter: "drop-shadow(0 0 6px rgb(34 229 132 / 0.7))" }}
+                  style={{ filter: "drop-shadow(0 0 6px rgb(255 106 61 / 0.7))" }}
                 />
               </svg>
             </div>

@@ -4,7 +4,7 @@ import { revalidateTag, unstable_cache } from "next/cache";
 import { connectDB } from "./db";
 import { Meta, QuestionModel, Track, TrackTopic } from "./models";
 import { SEED_QUESTIONS, type Difficulty, type Question } from "@/data/catalog";
-import { SEED_TRACKS, type Topic } from "@/data/topics";
+import { LEVELS, SEED_TRACKS, type Level, type Topic } from "@/data/topics";
 
 export const CATALOG_TAG = "catalog";
 
@@ -47,7 +47,7 @@ async function ensureSeeded() {
       t.topics.map(({ id, ...topic }) => ({
         updateOne: {
           filter: { track: t.key, topicId: id },
-          update: { $setOnInsert: { ...topic, practice: topic.practice ?? [], track: t.key, topicId: id, order: id, archived: false } },
+          update: { $setOnInsert: { ...topic, practice: topic.practice ?? [], levels: topic.levels ?? [], track: t.key, topicId: id, order: id, archived: false } },
           upsert: true,
         },
       })),
@@ -95,6 +95,27 @@ const CATALOG_UPDATES: { id: string; run: () => Promise<unknown> }[] = [
     },
   },
   {
+    id: "oop-track-v1",
+    run: async () => {
+      const oop = seedTrack("oop");
+      const order = await Track.countDocuments();
+      await Track.updateOne(
+        { key: oop.key },
+        { $setOnInsert: { key: oop.key, name: oop.name, description: oop.description, order, defaultOn: true, archived: false } },
+        { upsert: true },
+      );
+      await TrackTopic.bulkWrite(
+        oop.topics.map(({ id, ...topic }) => ({
+          updateOne: {
+            filter: { track: oop.key, topicId: id },
+            update: { $setOnInsert: { ...topic, practice: topic.practice ?? [], levels: topic.levels ?? [], track: oop.key, topicId: id, order: id, archived: false } },
+            upsert: true,
+          },
+        })),
+      );
+    },
+  },
+  {
     // Company tags from github.com/liquidslr/leetcode-company-wise-problems, most frequent first.
     id: "companies-liquidslr-v1",
     run: () =>
@@ -126,7 +147,7 @@ const loadCatalog = unstable_cache(
     ]);
     return { questions, tracks, topics };
   },
-  ["catalog-v3"],
+  ["catalog-v4"],
   { tags: [CATALOG_TAG] },
 );
 
@@ -145,7 +166,12 @@ export const getCatalog = cache(async () => {
   const allTracks: CatalogTrack[] = raw.tracks.map((t) => {
     const allTopics = raw.topics
       .filter((x) => x.track === t.key)
-      .map(({ topicId, ...x }) => ({ ...x, id: topicId, practice: x.practice?.length ? x.practice : undefined }));
+      .map(({ topicId, ...x }) => ({
+        ...x,
+        id: topicId,
+        practice: x.practice?.length ? x.practice : undefined,
+        levels: x.levels?.length ? (x.levels.filter((l) => (LEVELS as readonly string[]).includes(l)) as Level[]) : undefined,
+      }));
     return {
       key: t.key,
       name: t.name,

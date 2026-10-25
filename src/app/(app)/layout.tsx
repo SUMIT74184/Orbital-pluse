@@ -1,12 +1,12 @@
 import { Suspense } from "react";
 import { cookies } from "next/headers";
-import { AmbientBackground } from "@/components/AmbientBackground";
 import { Sidebar, type NavItem } from "@/components/nav/Sidebar";
 import { RightRail } from "@/components/nav/RightRail";
 import { RailContent, RailSkeleton } from "@/components/nav/RailContent";
 import { NAV_COOKIE, RAIL_COOKIE } from "@/components/nav/cookies";
 import { requireUser } from "@/lib/auth";
 import { getCatalog } from "@/lib/catalog";
+import { PRACTICE_TRACKS } from "@/data/topics";
 
 export default async function AppLayout({ children }: LayoutProps<"/">) {
   const [user, cat, jar] = await Promise.all([requireUser(), getCatalog(), cookies()]);
@@ -23,6 +23,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
         { href: "/questions?status=solved", label: "Solved" },
         { href: "/questions?status=backlog", label: "Backlog" },
         { href: "/questions?status=due", label: "Revision due" },
+        ...cat.tracks.filter((t) => PRACTICE_TRACKS.includes(t.key)).map((t) => ({ href: `/questions?tab=${t.key}`, label: `${t.name} practice` })),
       ],
     },
     {
@@ -34,7 +35,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
         { href: "/schedule#rotation", label: "Weekly rotation" },
       ],
     },
-    { href: "/tracks", label: "Tracks", icon: "tracks", children: cat.tracks.map((t) => ({ href: `/tracks#${t.key}`, label: t.name })) },
+    { href: "/tracks", label: "Tracks", icon: "tracks", children: cat.tracks.filter((t) => !PRACTICE_TRACKS.includes(t.key)).map((t) => ({ href: `/tracks/${t.key}`, label: t.name })) },
     {
       href: "/settings",
       label: "Settings",
@@ -50,7 +51,6 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
 
   return (
     <>
-      <AmbientBackground />
       <div className="relative z-10 flex flex-1 flex-col lg:flex-row">
         <Sidebar
           items={items}

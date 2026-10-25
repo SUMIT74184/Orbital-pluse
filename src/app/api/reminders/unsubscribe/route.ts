@@ -30,7 +30,7 @@ export async function GET(req: Request) {
     `<h1 style="font-size:18px;margin:0 0 8px">Stop reminder emails?</h1>
 <p style="color:#8b98a5;font-size:14px">You won't get daily or weekly emails from Orbit-Plus. You can turn them back on in your profile any time.</p>
 <form method="post"><input type="hidden" name="token" value="${token.replace(/[^\w.-]/g, "")}">
-<button style="margin-top:12px;background:#22e584;color:#000;font-weight:700;border:0;border-radius:8px;padding:10px 16px;cursor:pointer">Unsubscribe</button></form>`,
+<button style="margin-top:12px;background:#ff6a3d;color:#000;font-weight:700;border:0;border-radius:8px;padding:10px 16px;cursor:pointer">Unsubscribe</button></form>`,
   );
 }
 
@@ -42,6 +42,6 @@ export async function POST(req: Request) {
   return page(
     "Unsubscribed",
     `<h1 style="font-size:18px;margin:0 0 8px">You're unsubscribed</h1>
-<p style="color:#8b98a5;font-size:14px">No more reminder emails. <a href="${appUrl("/profile")}" style="color:#22e584">Turn them back on</a></p>`,
+<p style="color:#8b98a5;font-size:14px">No more reminder emails. <a href="${appUrl("/profile")}" style="color:#ff6a3d">Turn them back on</a></p>`,
   );
 }

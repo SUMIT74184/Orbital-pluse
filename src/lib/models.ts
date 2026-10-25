@@ -119,6 +119,7 @@ export interface TrackTopicDoc {
   title: string;
   points: string[];
   practice: { title: string; url: string }[];
+  levels: string[];
   order: number;
   archived: boolean;
 }
@@ -283,6 +284,7 @@ const trackTopicSchema = new Schema<TrackTopicDoc>(
     title: { type: String, required: true, trim: true },
     points: { type: [String], default: [] },
     practice: { type: [{ _id: false, title: String, url: String }], default: [] },
+    levels: { type: [String], default: [] },
     order: { type: Number, required: true },
     archived: { type: Boolean, default: false },
   },

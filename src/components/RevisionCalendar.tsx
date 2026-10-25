@@ -347,7 +347,7 @@ function MonthGrid({
               aria-pressed={isSel}
               className={`group relative flex aspect-square min-h-14 flex-col rounded-lg border p-1 text-left transition sm:aspect-auto sm:min-h-24 sm:p-2 ${
                 isSel
-                  ? "border-pulse shadow-[0_0_0_1px_var(--color-pulse),0_0_24px_-8px_rgb(34_229_132/0.7)]"
+                  ? "border-pulse shadow-[0_0_0_1px_var(--color-pulse),0_0_24px_-8px_rgb(255_106_61/0.7)]"
                   : isToday
                     ? "border-pulse/50"
                     : "border-line/70 hover:border-muted/60"

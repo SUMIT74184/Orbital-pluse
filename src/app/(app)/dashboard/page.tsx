@@ -7,8 +7,7 @@ import { MarketChart } from "@/components/MarketChart";
 import { ActivityBars, DifficultyBars, PatternRadar, TodayProgress } from "@/components/Charts";
 import { ReviseRating, ReviseToggle, SolveToggle, TopicToggle } from "@/components/Toggles";
 import { QuestionTitle } from "@/components/QuestionBits";
-import { TopicInterview } from "@/components/TopicInterview";
-import { hasInterviewQA } from "@/data/interview";
+import { topicHref } from "@/data/topics";
 
 export const metadata = { title: "Dashboard" };
 
@@ -148,11 +147,9 @@ export default async function Dashboard() {
                 <TopicToggle kind={t.kind} id={t.topic.id} done={t.done} />
                 <div className="min-w-0">
                   <div className={`font-medium ${t.done ? "text-muted line-through" : ""}`}>
-                    {hasInterviewQA(t.kind, t.topic.id) ? (
-                      <TopicInterview kind={t.kind} id={t.topic.id} title={t.topic.title} section={t.topic.section} />
-                    ) : (
-                      t.topic.title
-                    )}
+                    <Link href={topicHref(t.kind, t.topic.id)} className="decoration-topic/50 underline-offset-4 hover:text-topic hover:underline">
+                      {t.topic.title}
+                    </Link>
                   </div>
                   <p className="text-xs text-muted">{t.topic.section}</p>
                   <ul className="mt-2 list-disc space-y-0.5 pl-4 text-sm text-muted marker:text-topic">

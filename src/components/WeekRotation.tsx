@@ -5,7 +5,7 @@ const ORDER = [1, 2, 3, 4, 5, 6, 0];
 const FULL = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
 // A stable colour per pattern so the same topic looks the same everywhere.
-const HUES = ["#4c9aff", "#2dd4a0", "#b18cff", "#ffb547", "#ff7eb6", "#5eead4", "#f87171", "#a3e635", "#fbbf24"];
+const HUES = ["#4c9aff", "#fb923c", "#b18cff", "#ffb547", "#ff7eb6", "#e879f9", "#f87171", "#f43f5e", "#fbbf24"];
 export const groupColor = (g: string, groups: string[]) => HUES[Math.max(0, groups.indexOf(g)) % HUES.length];
 
 export function TopicChip({ group, solved, meta }: { group: string; solved?: number; meta: CatalogMeta }) {
@@ -24,6 +24,16 @@ export function TopicChip({ group, solved, meta }: { group: string; solved?: num
   );
 }
 
+/** Drag state and handlers, supplied by WeekRotationEditor. Without them the grid is read-only. */
+export type DragHandlers = {
+  active: { group: string; from: number } | null;
+  over: number | null;
+  start: (group: string, from: number) => void;
+  end: () => void;
+  enter: (day: number) => void;
+  drop: (day: number) => void;
+};
+
 /**
  * Seven day cards, Monday first. `today` (0–6) gets highlighted; `solvedByGroup` adds per-day progress.
  */
@@ -32,11 +42,13 @@ export function WeekRotation({
   meta,
   today,
   solvedByGroup,
+  drag,
 }: {
   schedule: string[][];
   meta: CatalogMeta;
   today?: number;
   solvedByGroup?: Record<string, number>;
+  drag?: DragHandlers;
 }) {
   return (
     <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-7">
@@ -45,11 +57,38 @@ export function WeekRotation({
         const total = groups.reduce((n, g) => n + (meta.counts[g] ?? 0), 0);
         const solved = solvedByGroup ? groups.reduce((n, g) => n + (solvedByGroup[g] ?? 0), 0) : null;
         const isToday = d === today;
+        const target = drag?.active && drag.active.from !== d;
+        const over = target && drag.over === d;
         return (
           <div
             key={d}
+            onDragOver={
+              target
+                ? (e) => {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = "move";
+                    if (drag.over !== d) drag.enter(d);
+                  }
+                : undefined
+            }
+            onDrop={
+              target
+                ? (e) => {
+                    e.preventDefault();
+                    drag.drop(d);
+                  }
+                : undefined
+            }
+            // Tap-to-move fallback for touch screens: pick a chip, then tap another day.
+            onClick={target ? () => drag.drop(d) : undefined}
             className={`relative flex flex-col rounded-xl border p-3 transition ${
-              isToday ? "border-pulse/60 bg-pulse/[0.06] shadow-[0_0_24px_-10px_rgb(34_229_132/0.6)]" : "border-line bg-panel-2/60"
+              over
+                ? "border-pulse bg-pulse/[0.12] ring-1 ring-pulse"
+                : target
+                  ? "cursor-pointer border-dashed border-pulse/40 bg-panel-2/60"
+                  : isToday
+                    ? "border-pulse/60 bg-pulse/[0.06] shadow-[0_0_24px_-10px_rgb(255_106_61/0.6)]"
+                    : "border-line bg-panel-2/60"
             }`}
           >
             <div className="flex items-center justify-between gap-2">
@@ -65,9 +104,37 @@ export function WeekRotation({
             </div>
             <div className="mt-2.5 flex flex-1 flex-wrap content-start gap-1.5 lg:flex-col lg:flex-nowrap">
               {groups.length ? (
-                groups.map((g) => <TopicChip key={g} group={g} solved={solvedByGroup?.[g]} meta={meta} />)
+                groups.map((g) =>
+                  drag ? (
+                    <button
+                      key={g}
+                      type="button"
+                      draggable
+                      onDragStart={(e) => {
+                        e.dataTransfer.effectAllowed = "move";
+                        e.dataTransfer.setData("text/plain", g); // Firefox won't start a drag without data
+                        drag.start(g, d);
+                      }}
+                      onDragEnd={drag.end}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (drag.active?.group === g && drag.active.from === d) drag.end();
+                        else drag.start(g, d);
+                      }}
+                      title="Drag to another day (or tap, then tap a day)"
+                      aria-pressed={drag.active?.group === g && drag.active.from === d}
+                      className={`max-w-full cursor-grab rounded-md text-left transition active:cursor-grabbing ${
+                        drag.active?.group === g && drag.active.from === d ? "opacity-50 ring-1 ring-pulse" : ""
+                      }`}
+                    >
+                      <TopicChip group={g} solved={solvedByGroup?.[g]} meta={meta} />
+                    </button>
+                  ) : (
+                    <TopicChip key={g} group={g} solved={solvedByGroup?.[g]} meta={meta} />
+                  ),
+                )
               ) : (
-                <span className="text-xs text-muted">Rest day</span>
+                <span className="text-xs text-muted">{over ? "Drop here" : "Rest day"}</span>
               )}
             </div>
             {total > 0 && (

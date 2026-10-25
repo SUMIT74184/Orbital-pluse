@@ -2,9 +2,10 @@
 
 import { useActionState, useState } from "react";
 import { saveSettings, type SettingsState } from "@/app/actions/settings";
-import { DEFAULT_SCHEDULE, WEEKDAYS } from "@/data/catalog";
+import { DEFAULT_SCHEDULE, WEEKDAYS, moveTopic } from "@/data/catalog";
 import type { CatalogMeta } from "@/lib/catalog";
-import { TopicChip, WeekRotation, groupColor } from "./WeekRotation";
+import { TopicChip, groupColor } from "./WeekRotation";
+import { WeekRotationEditor } from "./WeekRotationEditor";
 
 const ORDER = [1, 2, 3, 4, 5, 6, 0];
 
@@ -78,7 +79,7 @@ export function SettingsForm({
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 className="font-semibold">Weekly topic rotation</h2>
-            <p className="mt-1 text-xs text-muted">Click a day next to a pattern to add or remove it. The preview updates as you go.</p>
+            <p className="mt-1 text-xs text-muted">Drag a topic onto another day to move it (or tap a topic, then a day), or click the day buttons next to a pattern to add or remove it.</p>
           </div>
           <button
             type="button"
@@ -90,7 +91,12 @@ export function SettingsForm({
         </div>
 
         <div className="mt-4">
-          <WeekRotation schedule={schedule} today={today} meta={meta} />
+          <WeekRotationEditor
+            schedule={schedule}
+            today={today}
+            meta={meta}
+            onMove={(g, from, to) => setSchedule((s) => moveTopic(s, g, from, to, GROUPS))}
+          />
         </div>
 
         {/* Hidden inputs carry the schedule into the server action. */}

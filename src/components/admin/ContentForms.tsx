@@ -11,6 +11,7 @@ import {
   setTrackArchived,
   type AdminState,
 } from "@/app/actions/admin";
+import { LEVELS, LEVEL_LABEL, type Level } from "@/data/topics";
 
 export const input =
   "w-full rounded-lg border border-line bg-bg px-3 py-2 text-sm outline-none transition focus:border-pulse focus:ring-2 focus:ring-pulse/20";
@@ -164,6 +165,7 @@ export type TopicValues = {
   title: string;
   points: string[];
   practice?: { title: string; url: string }[];
+  levels?: Level[];
 };
 
 export function TopicForm({ track, sections, initial, onDone }: { track: string; sections: string[]; initial?: TopicValues; onDone?: () => void }) {
@@ -203,6 +205,17 @@ export function TopicForm({ track, sections, initial, onDone }: { track: string;
           />
         </Field>
       </div>
+      <fieldset className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+        <legend className="mb-1.5 text-xs font-medium text-muted">
+          Asked at <span className="font-normal text-muted/70">· none ticked = every level</span>
+        </legend>
+        {LEVELS.map((l) => (
+          <label key={l} className="flex items-center gap-2">
+            <input type="checkbox" name="levels" value={l} defaultChecked={initial?.levels?.includes(l)} className="accent-pulse" />
+            {LEVEL_LABEL[l]}
+          </label>
+        ))}
+      </fieldset>
       <Submit pending={pending} label={initial ? "Save topic" : "Add topic"} state={state} />
     </form>
   );

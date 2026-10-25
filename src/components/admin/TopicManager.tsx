@@ -18,6 +18,7 @@ export function TopicManager({ track, topics, sections }: { track: string; topic
           </p>
           <p className="mt-0.5 text-xs text-muted">
             {t.section} · done by {t.users}
+            {t.levels?.length ? ` · ${t.levels.join(", ")}` : ""}
             {t.points.length > 0 && ` · ${t.points.join(" · ")}`}
           </p>
         </>

@@ -37,7 +37,7 @@ function activeChild(children: NavChild[], pathname: string, params: URLSearchPa
   let score = -1;
   for (const c of children) {
     const { path, query, hash } = parse(c.href);
-    if (hash || path !== pathname || !query.every(([k, v]) => params.get(k) === v)) continue;
+    if (hash || !under(pathname, path) || !query.every(([k, v]) => params.get(k) === v)) continue;
     if (query.length > score) {
       best = c.href;
       score = query.length;
@@ -75,7 +75,7 @@ export function Sidebar({
   return (
     <>
       {/* Phones and tablets: a top bar whose menu button slides the sidebar in. */}
-      <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-line bg-bg/85 px-4 py-3 backdrop-blur lg:hidden">
+      <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-line bg-bg px-4 py-3 lg:hidden">
         <button onClick={() => setDrawer(true)} aria-label="Open menu" className="-ml-1 rounded-lg p-1.5 text-muted hover:bg-panel-2 hover:text-ink">
           <Icon name="menu" />
         </button>
@@ -104,7 +104,7 @@ export function Sidebar({
 
       {/* Desktop: sticky, collapsible to an icon rail. */}
       <aside
-        className={`sticky top-0 z-20 hidden h-screen shrink-0 flex-col border-r border-line bg-panel/80 backdrop-blur transition-[width] duration-200 lg:flex ${
+        className={`sticky top-0 z-20 hidden h-screen shrink-0 flex-col border-r border-line bg-panel transition-[width] duration-200 lg:flex ${
           collapsed ? "w-[68px]" : "w-60"
         }`}
         aria-label="Main menu"
