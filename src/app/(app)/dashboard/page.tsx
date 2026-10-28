@@ -8,6 +8,8 @@ import { ActivityBars, DifficultyBars, PatternRadar, TodayProgress } from "@/com
 import { ReviseRating, ReviseToggle, SolveToggle, TopicToggle } from "@/components/Toggles";
 import { QuestionTitle } from "@/components/QuestionBits";
 import { topicHref } from "@/data/topics";
+import { REVIVES_PER_MONTH } from "@/lib/revive";
+import { Icon } from "@/components/nav/Icons";
 
 export const metadata = { title: "Dashboard" };
 
@@ -62,6 +64,20 @@ export default async function Dashboard() {
         </Link>
       )}
 
+      {d.revive.revivedToday > 0 && (
+        <div className="card border-topic/40 px-4 py-3 text-sm">
+          <span className="font-semibold text-topic">
+            <Icon name="flame" className="mr-1 inline size-4 align-[-3px]" />
+            Streak revived
+          </span>
+          <span className="text-muted">
+            {" "}— clearing backlog filled in {d.revive.revivedToday} missed day{d.revive.revivedToday === 1 ? "" : "s"}. {d.revive.left} revive
+            {d.revive.left === 1 ? "" : "s"} left this month.
+          </span>{" "}
+          <Lifelines left={d.revive.left} />
+        </div>
+      )}
+
       {/* Where you stand today, next to the pattern radar. */}
       <div className="grid gap-4 lg:grid-cols-2">
         <div className="flex flex-col gap-4">
@@ -77,7 +93,15 @@ export default async function Dashboard() {
           />
           <section className="card grid flex-1 grid-cols-2 content-between gap-4 p-5">
             <Stat label="Solved" value={`${d.stats.solved}`} sub={`of ${d.stats.totalQuestions}`} />
-            <Stat label="Streak" value={`${d.streak}`} sub={d.streak === 1 ? "day" : "days"} />
+            <Stat
+              label="Streak"
+              value={`${d.streak}`}
+              sub={
+                <>
+                  {d.streak === 1 ? "day" : "days"} · <Lifelines left={d.revive.left} />
+                </>
+              }
+            />
             <Stat label="Revisions" value={`${d.stats.revisionsDone}`} sub={`of ${d.stats.revisionsTotal} scheduled`} />
             <Stat
               label={d.stats.tracks.length === 2 ? d.stats.tracks.map((t) => t.name).join(" / ") : "Track topics"}
@@ -179,6 +203,13 @@ export default async function Dashboard() {
 
           {d.missed.length > 0 && (
             <Panel title="Backlog from earlier days" accent="var(--color-hard)" count={`${d.missed.length}`}>
+              {d.revive.need > 0 && d.revive.need <= d.missed.length && (
+                <p className="bg-topic/10 px-4 py-2.5 text-xs text-topic">
+                  <Icon name="flame" className="mr-1 inline size-3.5 align-[-2px]" />
+                  You missed {d.revive.gap.map((g) => formatDate(g)).join(", ")}. Solve {d.revive.need} more backlog question
+                  {d.revive.need === 1 ? "" : "s"} to revive your streak · <Lifelines left={d.revive.left} />
+                </p>
+              )}
               {d.missed.slice(0, 8).map(({ q, assignedOn }) => (
                 <Row key={q.id}>
                   <SolveToggle qid={q.id} solved={false} />
@@ -210,7 +241,23 @@ export default async function Dashboard() {
   );
 }
 
-function Stat({ label, value, sub }: { label: string; value: string; sub: string }) {
+/** This month's streak revives: a full heart for each one left, an empty one for each used. */
+function Lifelines({ left }: { left: number }) {
+  return (
+    <span
+      className="inline-flex gap-0.5 align-[-2px]"
+      role="img"
+      title={`${left} of ${REVIVES_PER_MONTH} streak revives left this month`}
+      aria-label={`${left} streak revives left`}
+    >
+      {Array.from({ length: REVIVES_PER_MONTH }, (_, i) => (
+        <Icon key={i} name="heart" className={`size-3.5 ${i < left ? "fill-current text-hard" : "text-muted"}`} />
+      ))}
+    </span>
+  );
+}
+
+function Stat({ label, value, sub }: { label: string; value: string; sub: React.ReactNode }) {
   return (
     <div>
       <p className="text-xs text-muted">{label}</p>

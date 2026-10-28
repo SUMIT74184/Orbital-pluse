@@ -66,12 +66,17 @@ export function RichText({ text, className = "" }: { text: string; className?: s
 }
 
 /** `backticks` inside prose render as inline code. */
+/** Inline `code` and **bold**. */
 export function Inline({ text }: { text: string }) {
-  return text.split(/(`[^`]+`)/).map((part, i) =>
+  return text.split(/(`[^`]+`|\*\*[^*]+\*\*)/).map((part, i) =>
     part.startsWith("`") && part.endsWith("`") && part.length > 2 ? (
       <code key={i} className="rounded bg-bg px-1 py-px font-mono text-[12px] text-topic">
         {part.slice(1, -1)}
       </code>
+    ) : part.startsWith("**") && part.endsWith("**") && part.length > 4 ? (
+      <strong key={i} className="font-semibold text-ink">
+        {part.slice(2, -2)}
+      </strong>
     ) : (
       part
     ),

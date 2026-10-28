@@ -116,6 +116,51 @@ const CATALOG_UPDATES: { id: string; run: () => Promise<unknown> }[] = [
     },
   },
   {
+    id: "code-track-v1",
+    run: async () => {
+      const code = seedTrack("code");
+      const order = await Track.countDocuments();
+      await Track.updateOne(
+        { key: code.key },
+        { $setOnInsert: { key: code.key, name: code.name, description: code.description, order, defaultOn: true, archived: false } },
+        { upsert: true },
+      );
+      await TrackTopic.bulkWrite(
+        code.topics.map(({ id, ...topic }) => ({
+          updateOne: {
+            filter: { track: code.key, topicId: id },
+            update: { $setOnInsert: { ...topic, practice: topic.practice ?? [], levels: [], track: code.key, topicId: id, order: id, archived: false } },
+            upsert: true,
+          },
+        })),
+      );
+    },
+  },
+  {
+    // Programming: one-language lessons (Java Collections Framework, Python core data types), ids 25+.
+    // They are listed right after "Built-in data structures", so every code topic gets a new order.
+    id: "code-collections-v1",
+    run: async () => {
+      const code = seedTrack("code");
+      const old = code.topics.filter((t) => t.id <= 24);
+      const at = old.findLastIndex((t) => t.section === "Built-in data structures") + 1;
+      const shown = [...old.slice(0, at), ...code.topics.filter((t) => t.id > 24), ...old.slice(at)];
+      await Track.updateOne({ key: code.key }, { $set: { description: code.description } });
+      await TrackTopic.bulkWrite(
+        shown.map(({ id, ...topic }, n) => ({
+          updateOne: {
+            filter: { track: code.key, topicId: id },
+            update: {
+              $setOnInsert: { ...topic, practice: topic.practice ?? [], levels: [], track: code.key, topicId: id, archived: false },
+              $set: { order: n + 1 },
+            },
+            upsert: true,
+          },
+        })),
+      );
+    },
+  },
+  {
     // Company tags from github.com/liquidslr/leetcode-company-wise-problems, most frequent first.
     id: "companies-liquidslr-v1",
     run: () =>
@@ -147,7 +192,7 @@ const loadCatalog = unstable_cache(
     ]);
     return { questions, tracks, topics };
   },
-  ["catalog-v4"],
+  ["catalog-v6"],
   { tags: [CATALOG_TAG] },
 );
 

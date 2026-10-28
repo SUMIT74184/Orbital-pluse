@@ -2,9 +2,10 @@ import "server-only";
 import { cache } from "react";
 import { Types } from "mongoose";
 import { connectDB } from "./db";
-import { Plan, Progress, TopicDone, type PlanDoc, type ProgressDoc, type Revision } from "./models";
+import { Plan, Progress, Revive, TopicDone, type PlanDoc, type ProgressDoc, type Revision } from "./models";
 import type { AppUser } from "./auth";
 import { addDays, diffDays, todayIn, weekdayOf } from "./dates";
+import { activeDates, backlogSolves, reviveStatus } from "./revive";
 import { getCatalog, trackOn, type Catalog, type CatalogTrack } from "./catalog";
 import type { Difficulty, Question } from "@/data/catalog";
 import type { Topic, TrackKind } from "@/data/topics";
@@ -108,7 +109,7 @@ export type RevisionItem = {
   done: boolean;
 };
 
-export type DayActivity = { date: string; solved: number; revised: number; topics: number };
+export type DayActivity = { date: string; solved: number; revised: number; topics: number; revived: boolean };
 
 export type TopicItem = {
   kind: TrackKind;
@@ -148,9 +149,9 @@ function revisionItems(progress: ProgressDoc[], today: string, cat: Catalog): Re
   return items.sort((a, b) => Number(a.done) - Number(b.done) || b.overdueBy - a.overdueBy);
 }
 
-function activity(progress: ProgressDoc[], topicDays: string[], from: string, to: string): DayActivity[] {
+function activity(progress: ProgressDoc[], topicDays: string[], revivedDays: string[], from: string, to: string): DayActivity[] {
   const map = new Map<string, DayActivity>();
-  for (let d = from; d <= to; d = addDays(d, 1)) map.set(d, { date: d, solved: 0, revised: 0, topics: 0 });
+  for (let d = from; d <= to; d = addDays(d, 1)) map.set(d, { date: d, solved: 0, revised: 0, topics: 0, revived: false });
   for (const p of progress) {
     const s = map.get(p.solvedOn);
     if (s) s.solved++;
@@ -163,11 +164,15 @@ function activity(progress: ProgressDoc[], topicDays: string[], from: string, to
     const a = map.get(day);
     if (a) a.topics++;
   }
+  for (const day of revivedDays) {
+    const a = map.get(day);
+    if (a) a.revived = true;
+  }
   return [...map.values()];
 }
 
 function streakOf(days: DayActivity[]): number {
-  const active = (d: DayActivity) => d.solved + d.revised + d.topics > 0;
+  const active = (d: DayActivity) => d.revived || d.solved + d.revised + d.topics > 0;
   let i = days.length - 1;
   if (i >= 0 && !active(days[i])) i--; // today not started yet doesn't break the streak
   let n = 0;
@@ -193,10 +198,11 @@ export const getDashboard = cache(async (user: AppUser) => {
   const today = todayIn(user.timezone);
   const [plan, cat] = await Promise.all([getOrCreatePlan(user, today), getCatalog()]);
   const userId = oid(user.id);
-  const [progress, pastPlans, topicsDone] = await Promise.all([
+  const [progress, pastPlans, topicsDone, revives] = await Promise.all([
     Progress.find({ userId }).lean(),
     Plan.find({ userId, date: { $lt: today } }, { newQids: 1, date: 1 }).sort({ date: 1 }).lean(),
     TopicDone.find({ userId }).lean(),
+    Revive.find({ userId }, { date: 1, on: 1 }).lean(),
   ]);
   const solvedOn = new Map(progress.map((p) => [p.qid, p.solvedOn]));
   const topicDone = new Map(topicsDone.map((t) => [`${t.kind}:${t.topicId}`, t.doneOn]));
@@ -227,7 +233,9 @@ export const getDashboard = cache(async (user: AppUser) => {
   const done =
     newItems.filter((i) => i.solvedOn).length + revisions.filter((r) => r.done).length + topics.filter((t) => t.done).length;
 
-  const days = activity(progress, topicsDone.map((t) => t.doneOn), addDays(today, -29), today);
+  const topicDays = topicsDone.map((t) => t.doneOn);
+  const days = activity(progress, topicDays, revives.map((r) => r.date), addDays(today, -29), today);
+  const revive = reviveStatus(today, user.joined, activeDates(progress, topicDays), backlogSolves(progress, pastPlans), revives);
 
   const byDifficulty = { Easy: 0, Medium: 0, Hard: 0 };
   for (const p of progress) {
@@ -254,6 +262,7 @@ export const getDashboard = cache(async (user: AppUser) => {
     total,
     days,
     streak: streakOf(days),
+    revive,
     stats: {
       solved: progress.length,
       totalQuestions: cat.questions.length,
@@ -368,17 +377,18 @@ export async function getProfileStats(user: AppUser) {
   const cat = await getCatalog();
   const userId = oid(user.id);
   const today = todayIn(user.timezone);
-  const [progress, topics] = await Promise.all([Progress.find({ userId }).lean(), TopicDone.find({ userId }).lean()]);
+  const [progress, topics, revives] = await Promise.all([
+    Progress.find({ userId }).lean(),
+    TopicDone.find({ userId }).lean(),
+    Revive.find({ userId }, { date: 1 }).lean(),
+  ]);
 
-  const activeDays = new Set<string>();
-  for (const p of progress) {
-    activeDays.add(p.solvedOn);
-    for (const r of p.revisions ?? []) if (r.doneOn) activeDays.add(r.doneOn);
-  }
-  for (const t of topics) activeDays.add(t.doneOn);
+  const activeDays = activeDates(progress, topics.map((t) => t.doneOn));
+  // Revived days keep a streak going but aren't active days.
+  const streakDays = new Set([...activeDays, ...revives.map((r) => r.date)]);
 
-  // Longest run of consecutive active days, and the current one (today may still be pending).
-  const sorted = [...activeDays].sort();
+  // Longest run of consecutive streak days, and the current one (today may still be pending).
+  const sorted = [...streakDays].sort();
   let longest = 0;
   let run = 0;
   sorted.forEach((d, i) => {
@@ -386,7 +396,7 @@ export async function getProfileStats(user: AppUser) {
     longest = Math.max(longest, run);
   });
   let current = 0;
-  for (let d = activeDays.has(today) ? today : addDays(today, -1); activeDays.has(d); d = addDays(d, -1)) current++;
+  for (let d = streakDays.has(today) ? today : addDays(today, -1); streakDays.has(d); d = addDays(d, -1)) current++;
 
   const byDifficulty = { Easy: 0, Medium: 0, Hard: 0 };
   const byGroup: Record<string, number> = {};
@@ -426,8 +436,12 @@ export async function getActivityDays(user: AppUser, days = 30) {
   await connectDB();
   const userId = oid(user.id);
   const today = todayIn(user.timezone);
-  const [progress, topics] = await Promise.all([Progress.find({ userId }).lean(), TopicDone.find({ userId }, { doneOn: 1 }).lean()]);
-  return activity(progress, topics.map((t) => t.doneOn), addDays(today, -(days - 1)), today);
+  const [progress, topics, revives] = await Promise.all([
+    Progress.find({ userId }).lean(),
+    TopicDone.find({ userId }, { doneOn: 1 }).lean(),
+    Revive.find({ userId }, { date: 1 }).lean(),
+  ]);
+  return activity(progress, topics.map((t) => t.doneOn), revives.map((r) => r.date), addDays(today, -(days - 1)), today);
 }
 
 /** The last `weeks` weeks of activity for the contribution calendar, starting on a Sunday so columns are whole weeks. */

@@ -2,6 +2,7 @@ import { SEED_TRACKS } from "@/data/topics";
 import { SYSTEM_DESIGN_QA } from "./systemDesign";
 import { DBMS_QA } from "./dbms";
 import { OOP_QA } from "./oop";
+import { CODE_QA } from "./code";
 
 /**
  * One interview question with a model answer. In `a`, blank lines separate paragraphs,
@@ -16,6 +17,7 @@ const BY_TRACK: Record<string, Record<string, InterviewQA[]>> = {
   sd: SYSTEM_DESIGN_QA,
   dbms: DBMS_QA,
   oop: OOP_QA,
+  code: CODE_QA,
 };
 
 export function getInterviewQA(track: string, topicId: number): InterviewQA[] | null {

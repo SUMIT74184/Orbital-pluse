@@ -132,6 +132,14 @@ export interface ActiveDayDoc {
   date: string; // YYYY-MM-DD in the user's timezone
 }
 
+// A missed day the user filled in by clearing backlog questions, so it counts toward the streak.
+export interface ReviveDoc {
+  _id: Types.ObjectId;
+  userId: Types.ObjectId;
+  date: string; // the missed day, YYYY-MM-DD in the user's timezone
+  on: string; // the day it was revived
+}
+
 export type EventType = "signup" | "login" | "solve" | "revise" | "topic";
 
 export interface EventDoc {
@@ -300,6 +308,13 @@ const activeDaySchema = new Schema<ActiveDayDoc>({
 activeDaySchema.index({ userId: 1, date: 1 }, { unique: true });
 activeDaySchema.index({ date: 1 });
 
+const reviveSchema = new Schema<ReviveDoc>({
+  userId: { type: Schema.Types.ObjectId, required: true },
+  date: { type: String, required: true },
+  on: { type: String, required: true },
+});
+reviveSchema.index({ userId: 1, date: 1 }, { unique: true });
+
 // Append-only activity feed for the admin panel.
 const eventSchema = new Schema<EventDoc>({
   userId: { type: Schema.Types.ObjectId, required: true },
@@ -328,5 +343,6 @@ export const QuestionModel = model<QuestionDoc>("Question", questionSchema);
 export const Track = model<TrackDoc>("Track", trackSchema);
 export const TrackTopic = model<TrackTopicDoc>("TrackTopic", trackTopicSchema);
 export const ActiveDay = model<ActiveDayDoc>("ActiveDay", activeDaySchema);
+export const Revive = model<ReviveDoc>("Revive", reviveSchema);
 export const Event = model<EventDoc>("Event", eventSchema);
 export const Meta = model<MetaDoc>("Meta", metaSchema);

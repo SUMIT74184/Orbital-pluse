@@ -140,6 +140,8 @@ export function ContributionCalendar({
                             height: CELL,
                             gridRowStart: weekdayOf(d.date) + 1,
                             background: LEVELS[level(n)],
+                            // Revived days kept the streak alive without any work done, so they're only outlined.
+                            boxShadow: d.revived && n === 0 ? "inset 0 0 0 1.5px var(--color-topic)" : undefined,
                           }}
                         />
                       );
@@ -158,7 +160,9 @@ export function ContributionCalendar({
             <p className="font-semibold">
               {total(hover.d)
                 ? `${total(hover.d)} ${total(hover.d) === 1 ? "activity" : "activities"}`
-                : "No activity"}
+                : hover.d.revived
+                  ? "❤️ Streak revived"
+                  : "No activity"}
               <span className="font-normal text-muted">
                 {" "}
                 ·{" "}
@@ -181,6 +185,11 @@ export function ContributionCalendar({
       </div>
 
       <div className="mt-3 flex items-center justify-end gap-1.5 text-[10px] text-muted">
+        <span
+          className="rounded-[3px]"
+          style={{ width: CELL, height: CELL, background: LEVELS[0], boxShadow: "inset 0 0 0 1.5px var(--color-topic)" }}
+        />
+        <span className="mr-3">Revived</span>
         <span>Less</span>
         {LEVELS.map((c, i) => (
           <span

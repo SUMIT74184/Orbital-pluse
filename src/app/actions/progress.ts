@@ -8,6 +8,7 @@ import { Progress, TopicDone } from "@/lib/models";
 import { addDays, diffDays, todayIn } from "@/lib/dates";
 import { getCatalog } from "@/lib/catalog";
 import { logEvent } from "@/lib/events";
+import { tryRevive } from "@/lib/revive";
 import type { TrackKind } from "@/data/topics";
 
 async function ctx() {
@@ -33,7 +34,10 @@ export async function solveQuestion(qid: number) {
     },
     { upsert: true },
   );
-  if (res.upsertedCount) logEvent(user.id, "solve", { qid });
+  if (res.upsertedCount) {
+    logEvent(user.id, "solve", { qid });
+    await tryRevive(user, today);
+  }
   revalidatePath("/", "layout");
 }
 
