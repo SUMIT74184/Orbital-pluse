@@ -1,7 +1,7 @@
 // The languages Programming-track code is shown in. Kept apart from the guides so client components can import it cheaply.
 export const LANGS = [
-  { key: "java", label: "Java", file: "Main.java", color: "#f0883e" },
-  { key: "python", label: "Python", file: "main.py", color: "#5a9fd4" },
+  { key: "java", label: "Java", file: "Main.java", color: "var(--color-java)" },
+  { key: "python", label: "Python", file: "main.py", color: "var(--color-python)" },
 ] as const;
 export type Lang = (typeof LANGS)[number]["key"];
 /** The same program written once per language. */

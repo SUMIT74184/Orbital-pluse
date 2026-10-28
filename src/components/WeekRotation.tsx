@@ -97,7 +97,7 @@ export function WeekRotation({
                 <span className="hidden lg:inline">{WEEKDAYS[d]}</span>
               </span>
               {isToday && (
-                <span className="rounded-full bg-pulse px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-black">
+                <span className="rounded-full bg-pulse px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-on-accent">
                   Today
                 </span>
               )}

@@ -9,6 +9,7 @@ import { resetTodayPlanIfUntouched } from "@/lib/plan";
 import { scheduleFor } from "@/lib/reminders";
 import { getCatalog } from "@/lib/catalog";
 import { moveTopic } from "@/data/catalog";
+import { THEMES, type Theme } from "@/data/theme";
 
 export type SettingsState = { ok?: boolean; error?: string } | undefined;
 
@@ -79,6 +80,22 @@ export async function moveScheduleTopic(group: string, from: number, to: number)
   await User.updateOne({ _id: user.id }, { $set: { schedule } });
   // Today's new questions come from today's topics, so rebuild the plan if it hasn't been started.
   await resetTodayPlanIfUntouched({ ...user, schedule });
+  revalidatePath("/", "layout");
+  return {};
+}
+
+/** Settings → Appearance: saved right away; the page has already switched colours in the browser. */
+export async function saveTheme(theme: Theme): Promise<{ error?: string }> {
+  const user = await requireUser();
+  if (!THEMES.includes(theme)) return { error: "Unknown theme" };
+  await connectDB();
+  try {
+    // strict "throw": if the running server's User schema doesn't know `theme`, fail loudly instead of
+    // reporting "Saved" while Mongoose quietly drops the field.
+    await User.updateOne({ _id: user.id }, { $set: { theme } }, { strict: "throw" });
+  } catch {
+    return { error: "Couldn't save the theme" };
+  }
   revalidatePath("/", "layout");
   return {};
 }

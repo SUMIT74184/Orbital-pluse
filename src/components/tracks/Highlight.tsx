@@ -2,17 +2,18 @@ import type { Lang } from "@/data/langs";
 
 // A small syntax highlighter for the Programming track's Java and Python snippets. It only has to colour
 // keywords, strings, numbers, comments, types and calls well enough to read, so a tokenising regex is plenty.
+// Colours are theme tokens (globals.css), so code reads well in both light and dark themes.
 
 type Kind = "kw" | "str" | "num" | "com" | "type" | "fn" | "dec";
 
 const COLOR: Record<Kind, string> = {
-  kw: "text-[#c792ea]",
-  str: "text-[#c3e88d]",
-  num: "text-[#f78c6c]",
-  com: "italic text-[#6f7d8c]",
-  type: "text-[#ffcb6b]",
-  fn: "text-[#82aaff]",
-  dec: "text-[#ffcb6b]",
+  kw: "text-syn-kw",
+  str: "text-syn-str",
+  num: "text-syn-num",
+  com: "italic text-syn-com",
+  type: "text-syn-type",
+  fn: "text-syn-fn",
+  dec: "text-syn-type",
 };
 
 const words = (s: string) => new Set(s.split(" "));

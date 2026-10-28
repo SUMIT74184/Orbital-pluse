@@ -45,7 +45,7 @@ export default async function TrackPage({ params, searchParams }: PageProps<"/tr
           {next && (
             <Link
               href={`/tracks/${key}/${next.id}${q}`}
-              className="inline-flex items-center gap-2 rounded-lg bg-topic px-4 py-2 text-sm font-semibold text-black hover:brightness-110"
+              className="inline-flex items-center gap-2 rounded-lg bg-topic px-4 py-2 text-sm font-semibold text-on-accent hover:brightness-110"
             >
               {doneCount ? "Continue" : "Start"}: {next.title} →
             </Link>

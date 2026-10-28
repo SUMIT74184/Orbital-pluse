@@ -42,7 +42,7 @@ export function CodeTabs({ code, input, output }: { code: Code; input?: string; 
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border border-line bg-[#0d1117] shadow-lg shadow-black/20">
+    <div className="overflow-hidden rounded-xl border border-line bg-code shadow-lg shadow-black/10">
       <div className="flex items-end border-b border-line bg-panel-2/80 pl-1.5 pr-1">
         <div role="tablist" aria-label="Language" className="-mb-px flex">
           {langs.map((l) => {
@@ -56,7 +56,7 @@ export function CodeTabs({ code, input, output }: { code: Code; input?: string; 
                 onClick={() => setLang(l.key)}
                 disabled={langs.length === 1}
                 className={`mt-1.5 flex items-center gap-2 rounded-t-lg border-x border-t px-3.5 py-1.5 font-mono text-[12px] transition ${
-                  on ? "border-line bg-[#0d1117] text-ink" : "border-transparent text-muted hover:text-ink"
+                  on ? "border-line bg-code text-ink" : "border-transparent text-muted hover:text-ink"
                 }`}
                 style={on ? { boxShadow: `inset 0 2px 0 ${l.color}` } : undefined}
               >
@@ -79,10 +79,10 @@ export function CodeTabs({ code, input, output }: { code: Code; input?: string; 
         </button>
       </div>
       <div className="flex font-mono text-[12.5px] leading-6">
-        <pre aria-hidden className="select-none border-r border-line/60 py-3 pl-3 pr-2.5 text-right text-[#4b5866]">
+        <pre aria-hidden className="select-none border-r border-line/60 py-3 pl-3 pr-2.5 text-right text-code-gutter">
           {Array.from({ length: lines }, (_, n) => n + 1).join("\n")}
         </pre>
-        <pre className="min-w-0 flex-1 overflow-x-auto py-3 pl-4 pr-4 text-[#d6deeb]">
+        <pre className="min-w-0 flex-1 overflow-x-auto py-3 pl-4 pr-4 text-code-ink">
           <code>
             <Highlight code={text} lang={cur.key} />
           </code>

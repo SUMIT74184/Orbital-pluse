@@ -1,5 +1,6 @@
 import "server-only";
 import mongoose, { Schema, type Model, type Types } from "mongoose";
+import { THEMES, type Theme } from "@/data/theme";
 
 export interface UserDoc {
   _id: Types.ObjectId;
@@ -13,6 +14,7 @@ export interface UserDoc {
   tracks?: Record<string, boolean>; // track key -> on/off; missing keys fall back to the track's default
   reminders?: Reminders;
   goal?: Goal;
+  theme?: Theme;
   lastSeenAt?: Date | null;
   lastSeenOn?: string | null; // YYYY-MM-DD in the user's timezone
   createdAt?: Date;
@@ -191,6 +193,7 @@ const userSchema = new Schema<UserDoc>(
       ),
       default: undefined,
     },
+    theme: { type: String, enum: [...THEMES], default: "dark" },
     lastSeenAt: { type: Date, default: null },
     lastSeenOn: { type: String, default: null },
   },
@@ -331,6 +334,9 @@ eventSchema.index({ userId: 1, at: -1 });
 const metaSchema = new Schema<MetaDoc>({ _id: String, at: Date });
 
 function model<T>(name: string, schema: Schema<T>): Model<T> {
+  // In dev, hot reload re-runs this file; drop the cached model so a changed schema (a new field) takes effect
+  // instead of Mongoose silently discarding the new field on save.
+  if (process.env.NODE_ENV !== "production" && mongoose.models[name]) mongoose.deleteModel(name);
   return (mongoose.models[name] as Model<T>) ?? mongoose.model<T>(name, schema);
 }
 

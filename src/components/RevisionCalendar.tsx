@@ -357,7 +357,7 @@ function MonthGrid({
               <div className="flex items-start justify-between gap-1">
                 <span
                   className={`grid size-5 place-items-center rounded-full text-[11px] font-semibold tabular-nums sm:size-6 sm:text-xs ${
-                    isToday ? "bg-pulse text-black" : past ? "text-muted" : ""
+                    isToday ? "bg-pulse text-on-accent" : past ? "text-muted" : ""
                   }`}
                 >
                   {Number(d.slice(8))}

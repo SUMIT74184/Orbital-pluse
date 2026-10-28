@@ -122,7 +122,7 @@ export function QuestionsTable({
 
   const select = "rounded-lg border border-line bg-panel px-3 py-2 text-sm outline-none focus:border-pulse";
   const chip = (on: boolean) =>
-    `shrink-0 rounded-full px-3 py-1 text-xs transition ${on ? "bg-pulse font-semibold text-black" : "bg-panel-2 text-muted hover:text-ink"}`;
+    `shrink-0 rounded-full px-3 py-1 text-xs transition ${on ? "bg-pulse font-semibold text-on-accent" : "bg-panel-2 text-muted hover:text-ink"}`;
   const grid = gridOpen ? sectorCompanies : sectorCompanies.slice(0, GRID_PREVIEW);
 
   return (

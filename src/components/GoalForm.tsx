@@ -70,7 +70,7 @@ export function GoalForm({ goal, areas }: { goal: Goal | null; areas: { key: str
         </div>
       </fieldset>
       <div className="flex items-center gap-3">
-        <button disabled={pending} className="rounded-lg bg-pulse px-4 py-2 text-sm font-semibold text-black hover:brightness-110 disabled:opacity-60">
+        <button disabled={pending} className="rounded-lg bg-pulse px-4 py-2 text-sm font-semibold text-on-accent hover:brightness-110 disabled:opacity-60">
           {pending ? "Saving…" : "Save goal"}
         </button>
         {state?.ok && <span className="text-sm text-pulse">{state.ok} ✓</span>}

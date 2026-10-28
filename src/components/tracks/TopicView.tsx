@@ -88,8 +88,8 @@ export function TopicView({
           </p>
           <h1 className="text-2xl font-semibold leading-tight sm:text-3xl">{topic.title}</h1>
           {only && other && (
-            <p className="flex flex-wrap items-center gap-2 rounded-lg border px-3 py-2 text-sm" style={{ borderColor: `${only.color}55`, background: `${only.color}12` }}>
-              <span className="rounded-md px-2 py-0.5 font-mono text-[11px] font-semibold uppercase tracking-wider text-bg" style={{ background: only.color }}>
+            <p className="flex flex-wrap items-center gap-2 rounded-lg border px-3 py-2 text-sm" style={{ borderColor: `color-mix(in oklab, ${only.color} 35%, transparent)`, background: `color-mix(in oklab, ${only.color} 8%, transparent)` }}>
+              <span className="rounded-md px-2 py-0.5 font-mono text-[11px] font-semibold uppercase tracking-wider text-on-accent" style={{ background: only.color }}>
                 {only.label} only
               </span>
               <span className="text-ink/85">
@@ -185,7 +185,7 @@ export function TopicView({
                             <Inline text={r.task} />
                           </td>
                           {langs.map((l) => (
-                            <td key={l.key} className="whitespace-pre px-3 py-2 align-top font-mono text-[12px] text-[#d6deeb]">
+                            <td key={l.key} className="whitespace-pre px-3 py-2 align-top font-mono text-[12px] text-code-ink">
                               <Highlight code={r[l.key] ?? ""} lang={l.key} />
                             </td>
                           ))}
@@ -271,7 +271,7 @@ export function TopicView({
                           <Inline text={ex.q} />
                         </span>
                       </p>
-                      <pre className="overflow-x-auto rounded-lg border border-line bg-[#0d1117] px-4 py-2.5 font-mono text-[12.5px] leading-6 text-ink/85">{dedent(ex.example)}</pre>
+                      <pre className="overflow-x-auto rounded-lg border border-line bg-code px-4 py-2.5 font-mono text-[12.5px] leading-6 text-ink/85">{dedent(ex.example)}</pre>
                       {ex.hint && (
                         <details className="text-sm">
                           <summary className="cursor-pointer select-none text-muted hover:text-ink">Hint</summary>

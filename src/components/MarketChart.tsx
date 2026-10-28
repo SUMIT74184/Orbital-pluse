@@ -6,9 +6,9 @@ import { formatDate } from "@/lib/dates";
 
 type Candle = DayActivity & { o: number; h: number; l: number; c: number; ret: number; points: number; ma: number | null };
 
-const UP = "#22e584";
-const DOWN = "#ff5c6c";
-const FLAT = "#8b98a5";
+const UP = "var(--color-up)";
+const DOWN = "var(--color-down)";
+const FLAT = "var(--color-muted)";
 
 /**
  * Turns daily activity into a price series. Each day's return depends on how the day's
@@ -82,7 +82,7 @@ export function MarketChart({
   const tone = change === 0 ? FLAT : up ? UP : DOWN;
 
   return (
-    <section className="overflow-hidden rounded-2xl border border-line bg-[#0b1016]">
+    <section className="overflow-hidden rounded-2xl border border-line bg-bg">
       {/* Ticker header */}
       <div className="flex flex-wrap items-end justify-between gap-4 border-b border-line px-4 py-3 sm:px-5">
         <div>
@@ -143,11 +143,11 @@ export function MarketChart({
           {/* Price pane */}
           <svg viewBox={`0 0 100 ${H}`} preserveAspectRatio="none" className="block h-48 w-full sm:h-56" role="img" aria-label="Prep index candlestick chart">
             {ticks.map((t) => (
-              <line key={t} x1={0} x2={100} y1={y(t)} y2={y(t)} stroke="#1f2a36" strokeDasharray="2 3" vectorEffect="non-scaling-stroke" />
+              <line key={t} x1={0} x2={100} y1={y(t)} y2={y(t)} stroke="var(--color-line)" strokeDasharray="2 3" vectorEffect="non-scaling-stroke" />
             ))}
             <line x1={0} x2={100} y1={y(last.c)} y2={y(last.c)} stroke={tone} strokeOpacity={0.5} strokeDasharray="4 3" vectorEffect="non-scaling-stroke" />
             {sel != null && (
-              <line x1={x0(sel) + slot / 2} x2={x0(sel) + slot / 2} y1={0} y2={H} stroke="#8b98a5" strokeOpacity={0.4} vectorEffect="non-scaling-stroke" />
+              <line x1={x0(sel) + slot / 2} x2={x0(sel) + slot / 2} y1={0} y2={H} stroke="var(--color-muted)" strokeOpacity={0.4} vectorEffect="non-scaling-stroke" />
             )}
             {candles.map((c, i) => {
               const color = c.c === c.o ? FLAT : c.c > c.o ? UP : DOWN;

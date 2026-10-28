@@ -42,6 +42,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
       icon: "settings",
       children: [
         { href: "/settings", label: "Study plan" },
+        { href: "/settings#appearance", label: "Appearance" },
         { href: "/profile", label: "Profile" },
         { href: "/profile#goal", label: "Goal" },
         { href: "/profile#reminders", label: "Email reminders" },
@@ -51,7 +52,8 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
 
   return (
     <>
-      <div className="relative z-10 flex flex-1 flex-col lg:flex-row">
+      {/* data-theme switches the whole page's colours (see globals.css). */}
+      <div data-theme={user.theme} className="relative z-10 flex flex-1 flex-col lg:flex-row">
         <Sidebar
           items={items}
           initialCollapsed={jar.get(NAV_COOKIE)?.value === "collapsed"}

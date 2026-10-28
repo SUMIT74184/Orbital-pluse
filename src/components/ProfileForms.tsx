@@ -42,7 +42,7 @@ export function ProfileForms({ name, email }: { name: string; email: string }) {
         <Field label="Name" name="name" defaultValue={name} required minLength={2} autoComplete="name" />
         <Field label="Email" name="email" type="email" defaultValue={email} required autoComplete="email" />
         <div className="flex items-center gap-3">
-          <button disabled={pPending} className="rounded-lg bg-pulse px-4 py-2 text-sm font-semibold text-black hover:brightness-110 disabled:opacity-60">
+          <button disabled={pPending} className="rounded-lg bg-pulse px-4 py-2 text-sm font-semibold text-on-accent hover:brightness-110 disabled:opacity-60">
             {pPending ? "Saving…" : "Save details"}
           </button>
           <Status state={pState} />
@@ -86,7 +86,7 @@ export function ProfileForms({ name, email }: { name: string; email: string }) {
           </div>
           <button
             disabled={dPending || confirm.trim().toLowerCase() !== email}
-            className="rounded-lg bg-hard px-4 py-2.5 text-sm font-semibold text-black hover:brightness-110 disabled:opacity-40"
+            className="rounded-lg bg-hard px-4 py-2.5 text-sm font-semibold text-on-accent hover:brightness-110 disabled:opacity-40"
           >
             {dPending ? "Deleting…" : "Delete my account"}
           </button>

@@ -1,5 +1,6 @@
 import { requireUser } from "@/lib/auth";
 import { SettingsForm } from "@/components/SettingsForm";
+import { ThemePicker } from "@/components/ThemePicker";
 import { todayIn, weekdayOf } from "@/lib/dates";
 import { getCatalog, trackOn } from "@/lib/catalog";
 
@@ -19,6 +20,7 @@ export default async function SettingsPage() {
           apply to questions you solve after saving.
         </p>
       </div>
+      <ThemePicker initial={user.theme} />
       <SettingsForm
         timezones={timezones}
         today={weekdayOf(todayIn(user.timezone))}

@@ -6,6 +6,7 @@ import { connectDB } from "./db";
 import { ActiveDay, User, type Goal, type UserDoc } from "./models";
 import { readSession } from "./session";
 import { dateIn, todayIn } from "./dates";
+import { parseTheme, type Theme } from "@/data/theme";
 import { DEFAULT_DAILY_TARGET, DEFAULT_REVISION_DAYS, DEFAULT_SCHEDULE } from "@/data/catalog";
 
 export type AppUser = {
@@ -21,6 +22,7 @@ export type AppUser = {
   isAdmin: boolean;
   reminders: { daily: boolean; weekly: boolean; hour: number; dailyAt: Date | null; weeklyAt: Date | null; testAt: Date | null };
   joined: string; // signup date in the user's timezone
+  theme: Theme;
 };
 
 /** Fills in defaults for fields older accounts don't have. Used by the session lookup and the email cron. */
@@ -47,6 +49,7 @@ export function toAppUser(u: UserDoc): AppUser {
       testAt: r?.testAt ?? null,
     },
     joined: u.createdAt ? dateIn(u.createdAt, timezone) : "1970-01-01",
+    theme: parseTheme(u.theme),
   };
 }
 

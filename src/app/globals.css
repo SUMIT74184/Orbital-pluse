@@ -1,25 +1,53 @@
 @import "tailwindcss";
 
+/*
+ * Every colour has a light and a dark value: light-dark() picks one from the page's color-scheme.
+ * Dark is the default; app pages carry data-theme (dark / light / system) from the user's settings,
+ * and the landing and login pages, which have no data-theme, always stay dark.
+ * Light is a dimmed silver-grey theme: no white surfaces and charcoal text, so it stays calm at night.
+ */
 @theme {
-  --color-bg: #0a0e13;
-  --color-panel: #10161d;
-  --color-panel-2: #151d26;
-  --color-line: #1f2a36;
-  --color-ink: #e6edf3;
-  --color-muted: #8b98a5;
-  --color-pulse: #ff6a3d;
-  --color-new: #4c9aff;
-  --color-rev: #b18cff;
-  --color-topic: #ffb547;
-  --color-easy: #ffd54a;
-  --color-medium: #ff9f43;
-  --color-hard: #ff6b6b;
+  --color-bg: light-dark(#c8ccd1, #0a0e13);
+  --color-panel: light-dark(#d2d5da, #10161d);
+  --color-panel-2: light-dark(#bec2c8, #151d26);
+  --color-line: light-dark(#b1b6bd, #1f2a36);
+  --color-ink: light-dark(#202429, #e6edf3);
+  --color-muted: light-dark(#4f5761, #8b98a5);
+  --color-pulse: light-dark(#913c16, #ff6a3d);
+  --color-new: light-dark(#295694, #4c9aff);
+  --color-rev: light-dark(#6541a8, #b18cff);
+  --color-topic: light-dark(#7b4b09, #ffb547);
+  --color-easy: light-dark(#6e5200, #ffd54a);
+  --color-medium: light-dark(#8b4207, #ff9f43);
+  --color-hard: light-dark(#99332b, #ff6b6b);
+  --color-up: light-dark(#1a623c, #22e584);
+  --color-down: light-dark(#99332b, #ff5c6c);
+  /* Text on a solid accent fill (buttons, badges): accents are deep in light mode, so the text turns light. */
+  --color-on-accent: light-dark(#eef0f2, #000000);
+  /* Programming track: language colours and the code editor. */
+  --color-java: light-dark(#8e3e0f, #f0883e);
+  --color-python: light-dark(#27598a, #5a9fd4);
+  --color-code: light-dark(#c3c7cd, #0d1117);
+  --color-code-ink: light-dark(#23272d, #d6deeb);
+  --color-code-gutter: light-dark(#8a919b, #4b5866);
+  --color-syn-kw: light-dark(#7c348f, #c792ea);
+  --color-syn-str: light-dark(#3c5b17, #c3e88d);
+  --color-syn-num: light-dark(#8b3a11, #f78c6c);
+  --color-syn-com: light-dark(#5a626b, #6f7d8c);
+  --color-syn-type: light-dark(#6e4b00, #ffcb6b);
+  --color-syn-fn: light-dark(#26538c, #82aaff);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
 html {
   color-scheme: dark;
+}
+:root:has([data-theme="light"]) {
+  color-scheme: light;
+}
+:root:has([data-theme="system"]) {
+  color-scheme: light dark;
 }
 
 body {

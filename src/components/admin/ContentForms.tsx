@@ -31,7 +31,7 @@ export function Field({ label, hint, children }: { label: string; hint?: string;
 function Submit({ pending, label, state }: { pending: boolean; label: string; state: AdminState }) {
   return (
     <div className="flex flex-wrap items-center gap-3">
-      <button disabled={pending} className="rounded-lg bg-pulse px-4 py-2 text-sm font-semibold text-black hover:brightness-110 disabled:opacity-60">
+      <button disabled={pending} className="rounded-lg bg-pulse px-4 py-2 text-sm font-semibold text-on-accent hover:brightness-110 disabled:opacity-60">
         {pending ? "Saving…" : label}
       </button>
       {state?.ok && <span className="text-sm text-pulse">{state.ok} ✓</span>}

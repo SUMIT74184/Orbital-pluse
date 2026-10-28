@@ -97,7 +97,7 @@ export function TodayCard() {
         ))}
       </ul>
       <div className="today-anim pointer-events-none absolute inset-x-0 bottom-4 flex justify-center" style={{ animationName: "done" }}>
-        <span className="rounded-full bg-pulse px-4 py-2 text-sm font-semibold text-black shadow-[0_0_30px_rgb(255_106_61/0.7)]">
+        <span className="rounded-full bg-pulse px-4 py-2 text-sm font-semibold text-on-accent shadow-[0_0_30px_rgb(255_106_61/0.7)]">
           Day complete · streak 24 🔥
         </span>
       </div>
