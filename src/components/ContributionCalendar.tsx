@@ -3,17 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import type { DayActivity } from "@/lib/plan";
 import { formatDate, weekdayOf } from "@/lib/dates";
+import { HEAT_LABELS, HEAT_LEVELS, heatLevel } from "@/lib/heat";
 
-// Light blue for a little activity, deep blue for a lot. Level 0 is an empty cell.
-const LEVELS = [
-  "var(--color-panel-2)",
-  "#bfdbfe",
-  "#60a5fa",
-  "#2563eb",
-  "#1e40af",
-];
-const level = (n: number) =>
-  n === 0 ? 0 : n <= 2 ? 1 : n <= 4 ? 2 : n <= 7 ? 3 : 4;
+const LEVELS = HEAT_LEVELS;
+const level = heatLevel;
 const total = (d: DayActivity) => d.solved + d.revised + d.topics;
 
 const CELL = 12;
@@ -196,7 +189,7 @@ export function ContributionCalendar({
             key={i}
             className="rounded-[3px]"
             style={{ width: CELL, height: CELL, background: c }}
-            title={["0", "1–2", "3–4", "5–7", "8+"][i]}
+            title={HEAT_LABELS[i]}
           />
         ))}
         <span>More</span>

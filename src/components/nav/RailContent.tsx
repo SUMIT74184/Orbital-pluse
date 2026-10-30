@@ -1,10 +1,11 @@
 import Link from "next/link";
 import type { AppUser } from "@/lib/auth";
-import { getDashboard } from "@/lib/plan";
+import { getDashboard, type DayActivity } from "@/lib/plan";
 import { getCatalog } from "@/lib/catalog";
 import { diffDays, formatDate } from "@/lib/dates";
 import { dailyInterviewQA } from "@/data/interview";
 import { topicHref } from "@/data/topics";
+import { HEAT_LEVELS, heatLevel } from "@/lib/heat";
 import { Icon, type IconName } from "./Icons";
 
 const DIFF_COLOR = { Easy: "var(--color-easy)", Medium: "var(--color-medium)", Hard: "var(--color-hard)" } as const;
@@ -251,8 +252,7 @@ function FocusRow({
   );
 }
 
-function Heatmap({ days }: { days: { date: string; solved: number; revised: number; topics: number }[] }) {
-  const level = (n: number) => (n === 0 ? "bg-panel-2" : n <= 2 ? "bg-pulse/30" : n <= 5 ? "bg-pulse/60" : "bg-pulse");
+function Heatmap({ days }: { days: DayActivity[] }) {
   return (
     <div className="mt-3">
       <div className="grid grid-cols-14 gap-1">
@@ -261,7 +261,12 @@ function Heatmap({ days }: { days: { date: string; solved: number; revised: numb
           return (
             <span
               key={day.date}
-              className={`aspect-square rounded-[3px] ${level(n)}`}
+              className="aspect-square rounded-[3px]"
+              style={{
+                background: HEAT_LEVELS[heatLevel(n)],
+                // Same as the profile calendar: revived days kept the streak without work, so they're only outlined.
+                boxShadow: day.revived && n === 0 ? "inset 0 0 0 1.5px var(--color-topic)" : undefined,
+              }}
               title={`${formatDate(day.date)}: ${day.solved} solved, ${day.revised} revised, ${day.topics} topics`}
             />
           );

@@ -38,6 +38,10 @@ function pickNew(user: AppUser, date: string, taken: Set<number>, questions: Que
   return picked;
 }
 
+/** Tracks students work through on their own from the Tracks page: never put in the daily plan or the dashboard. */
+const SELF_PACED_TRACKS = new Set(["code"]);
+const inDailyPlan = (key: string) => !SELF_PACED_TRACKS.has(key);
+
 function nextTopic(track: CatalogTrack, done: Set<string>): number | null {
   const t = track.topics.find((t) => !done.has(`${track.key}:${t.id}`));
   return t ? t.id : null;
@@ -73,7 +77,7 @@ export async function getOrCreatePlan(user: AppUser, date: string): Promise<Plan
     date,
     newQids: pickNew(user, date, taken, cat.questions),
     topics: cat.tracks
-      .filter((t) => trackOn(user.tracks, t))
+      .filter((t) => trackOn(user.tracks, t) && inDailyPlan(t.key))
       .flatMap((t) => {
         const topicId = nextTopic(t, done);
         return topicId == null ? [] : [{ track: t.key, topicId }];
@@ -184,8 +188,9 @@ function streakOf(days: DayActivity[]): number {
 }
 
 /** Topics done per live track, for tracks the user has on or has made progress in. */
-function trackTotals(cat: Catalog, user: AppUser, done: { kind: string; topicId: number }[]) {
+function trackTotals(cat: Catalog, user: AppUser, done: { kind: string; topicId: number }[], selfPaced = true) {
   return cat.tracks
+    .filter((t) => selfPaced || inDailyPlan(t.key))
     .map((t) => {
       const live = new Set(t.topics.map((x) => x.id));
       return { key: t.key, name: t.name, done: done.filter((d) => d.kind === t.key && live.has(d.topicId)).length, total: t.topics.length, on: trackOn(user.tracks, t) };
@@ -221,6 +226,7 @@ export const getDashboard = cache(async (user: AppUser) => {
 
   const topics: TopicItem[] = [];
   for (const { track: kind, topicId: id } of planTopics(plan)) {
+    if (!inDailyPlan(kind)) continue; // plans made before the track went self-paced
     const track = cat.trackByKey.get(kind);
     const topic = track?.allTopics.find((t) => t.id === id);
     if (!track || !topic) continue;
@@ -270,7 +276,7 @@ export const getDashboard = cache(async (user: AppUser) => {
       byGroup,
       revisionsDone,
       revisionsTotal,
-      tracks: trackTotals(cat, user, topicsDone),
+      tracks: trackTotals(cat, user, topicsDone, false),
     },
   };
 });
